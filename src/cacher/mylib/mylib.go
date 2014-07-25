@@ -31,7 +31,7 @@ const defaultConfig = `
     [main]
     port = 8766
     logLevel = 10
-    logFile = ./debug.log
+    logFile = ./debug_123.log
     storage = 127.0.0.1:9000:1
     Rf = 1
 `

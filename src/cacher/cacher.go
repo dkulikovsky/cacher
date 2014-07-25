@@ -23,7 +23,6 @@ import _ "net/http/pprof"
 
 const (
 	DEBUG            = 2
-	log_name         = "./cacher.log"
     layout           = "Jan 2, 2006 at 15:04:02"
 	worker_chan_size = 500000
 )
@@ -74,13 +73,13 @@ func log(lvl string, msg string) {
 	}
 }
 
-func logger_loop(data chan *Msg) {
-	f, err := os.Create(log_name)
+func logger_loop(data chan *Msg, logFile string) {
+	f, err := os.Create(logFile)
 	if err != nil {
-		os.Stderr.WriteString(fmt.Sprintf("Unable to create file %s, %v\n", log_name, err))
+		os.Stderr.WriteString(fmt.Sprintf("Unable to create file %s, %v\n", logFile, err))
 		os.Exit(1)
 	} else {
-		fmt.Sprintf("opened log file %s\n", log_name)
+		fmt.Sprintf("opened log file %s\n", logFile)
 	}
 	defer f.Close()
 	for {
@@ -310,7 +309,8 @@ func main() {
 
 	// start logger
 	LogC = make(chan *Msg, 100000)
-	go logger_loop(LogC)
+    fmt.Printf("strating logger with %s\n", config.LogFile)
+	go logger_loop(LogC, config.LogFile)
 	log("info", "Starting")
 
 	// set hash ring object
