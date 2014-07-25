@@ -15,7 +15,7 @@ type Storage struct {
 }
 
 type Config struct {
-    Port int
+    Port string
     LogLevel string
     LogFile string
     Storage string
@@ -29,7 +29,7 @@ type configFile struct {
 
 const defaultConfig = `
     [main]
-    port = 8765
+    port = 8766
     logLevel = 10
     logFile = ./debug.log
     storage = 127.0.0.1:9000:1

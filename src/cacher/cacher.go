@@ -11,7 +11,8 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"runtime/pprof"
+    "flag"
+//	"runtime/pprof"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -24,12 +25,13 @@ const (
 	DEBUG            = 2
 	log_name         = "./cacher.log"
     layout           = "Jan 2, 2006 at 15:04:02"
-	worker_chan_size = 100000
+	worker_chan_size = 500000
 )
 
 var (
 	listen_port string = "8765"
 	LogC        chan *Msg
+    confFile        *string = flag.String("config", "config.ini", "config file")
 )
 
 type Sender struct {
@@ -44,6 +46,7 @@ type Boss struct {
 	rf      int
 	ring    *consistent.Consistent
 	single  int
+    port string
 }
 
 type Mmon struct {
@@ -179,16 +182,16 @@ func monitor(mon *Mmon, boss Boss) {
 		select {
 		case <-ticker:
 			//			log("debug", fmt.Sprintf("sending to %s..", sender.host))
-			send_mon_data(atomic.SwapInt32(&mon.send, 0), atomic.SwapInt32(&mon.rcv, 0), atomic.SwapInt32(&mon.conn, 0), sender)
+			send_mon_data(atomic.SwapInt32(&mon.send, 0), atomic.SwapInt32(&mon.rcv, 0), atomic.SwapInt32(&mon.conn, 0), boss.port, sender)
 		}
 	}
 }
 
-func send_mon_data(m int32, r int32, c int32, sender Sender) {
+func send_mon_data(m int32, r int32, c int32, port string, sender Sender) {
 	ts := time.Now()
-	out := fmt.Sprintf("('one_sec.int.metrics_send', %d, %d, '%s'),", m, ts.Unix(), ts.Format("2006-01-02"))
-	out = fmt.Sprintf("%s('one_sec.int.metrics_rcvd', %d, %d, '%s'),", out, r, ts.Unix(), ts.Format("2006-01-02"))
-	out = fmt.Sprintf("%s('one_sec.int.conn', %d, %d, '%s')", out, c, ts.Unix(), ts.Format("2006-01-02"))
+	out := fmt.Sprintf("('one_sec.int_%s.metrics_send', %d, %d, '%s'),", port, m, ts.Unix(), ts.Format("2006-01-02"))
+	out = fmt.Sprintf("%s('one_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), ts.Format("2006-01-02"))
+	out = fmt.Sprintf("%s('one_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), ts.Format("2006-01-02"))
 //	log("debug", fmt.Sprintf("MONITOR: %s", out))
 	send_data(out, sender)
 }
@@ -283,23 +286,26 @@ func parse(input string, boss Boss) {
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
-	f, err := os.Create("cacher.prf")
+    /*
+    f, err := os.Create("cacher.prf")
 	if err != nil {
 		os.Exit(1)
 	}
+    */
     go func() {
         http.ListenAndServe("0.0.0.0:6060", nil)
     }()
 //	pprof.StartCPUProfile(f)
 //	defer pprof.StopCPUProfile()
 	// parse config
-	config_file := "config.ini"
+    flag.Parse()
 	var config mylib.Config
-	if _, err := os.Stat(config_file); os.IsNotExist(err) {
-		fmt.Printf("no such file: %s, loading default\n", config_file)
+	if _, err := os.Stat(*confFile); os.IsNotExist(err) {
+		fmt.Printf("no such file: %s, loading default\n", *confFile)
 		config = mylib.Load("")
 	} else {
-		config = mylib.Load("config.ini")
+		config = mylib.Load(*confFile)
+        fmt.Printf("using %s as config file\n", *confFile)
 	}
 
 	// start logger
@@ -337,6 +343,7 @@ func main() {
 	boss.rf = config.Rf
 	boss.ring = r
 	boss.single = 0
+    boss.port = config.Port
 	// if we have a single host, than we can ignore hash ring mess
 	// and do simple rr rotation of senders
 	if len(boss.ring.Members()) == 1 {
@@ -347,7 +354,8 @@ func main() {
 	go monitor(mon, boss)
 
 	// start listener
-	ln, err := net.Listen("tcp", ":"+listen_port)
+	ln, err := net.Listen("tcp", ":"+config.Port)
+    log("info", fmt.Sprintf("Started on %s port", config.Port))
 	if err != nil {
 		log("error", fmt.Sprintf("Unable to start listener, %v", err))
 		os.Exit(1)
@@ -363,12 +371,12 @@ func main() {
 		} else {
 			log("debug", fmt.Sprintf("Failed to accept connection, %v", err))
 		}
-    pprof.WriteHeapProfile(f)
+    //pprof.WriteHeapProfile(f)
 	}
 
 	log("info", "Done")
 	// close log
 	LogC <- &Msg{}
 
-    f.Close()
+    //f.Close()
 }
