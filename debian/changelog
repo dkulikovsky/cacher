@@ -1,3 +1,9 @@
+cacher (0.1.1) unstable; urgency=low
+
+  * now port is defined via conffile 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 24 Jul 2014 20:48:09 +0400
+
 cacher (0.1.0) unstable; urgency=low
 
   * packed in deb 
