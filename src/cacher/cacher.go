@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
+    "sync"
 	"time"
 )
 
@@ -24,7 +25,6 @@ import _ "net/http/pprof"
 const (
 	DEBUG            = 2
     layout           = "Jan 2, 2006 at 15:04:02"
-	worker_chan_size = 500000
 )
 
 var (
@@ -46,6 +46,7 @@ type Boss struct {
 	ring    *consistent.Consistent
 	single  int
     port string
+    deltaChan chan string
 }
 
 type Mmon struct {
@@ -58,6 +59,10 @@ type Msg struct {
 	lvl string
 	msg string
 }
+
+// Delta object for metrics delta
+var Delta []string
+var DeltaLock sync.Mutex
 
 func log(lvl string, msg string) {
 	if DEBUG == 1 {
@@ -277,14 +282,48 @@ func parse(input string, boss Boss) {
 				w.pipe <- fmt.Sprintf("('%s', %s, %d, '%s')", metric, data, t.Unix(), t.Format("2006-01-02"))
 			}
 		}
+        // send metric to deltaManager
+        log("debug", fmt.Sprintf("sending %s to deltaChan", metric))
+        boss.deltaChan <- metric
 	} else {
 		log("error", fmt.Sprintf("[Error] Bad formated input: %s", input))
 	}
 	return
 }
 
+func deltaHandler(w http.ResponseWriter, r *http.Request) {
+    DeltaLock.Lock()
+    delta := Delta
+    Delta = nil
+    DeltaLock.Unlock()
+    //fmt.Printf("got request, result %v\n", delta)
+    fmt.Fprintf(w, strings.Join(delta, "\n"))
+}
+
+func deltaServer() {
+    http.HandleFunc("/delta", deltaHandler)
+    http.ListenAndServe(":9876", nil)
+}
+
+func deltaManager(metrics chan string) {
+    go deltaServer()
+    cache := make(map[string]int)
+    for {
+           m := <- metrics
+           _, ok := cache[m]
+           fmt.Printf("got %s\n", m)
+           if !ok {
+               DeltaLock.Lock()
+               Delta = append(Delta, m)
+               // log("debug",fmt.Sprintf("appended %s to delta\n", m))
+               DeltaLock.Unlock()
+               cache[m] = 1
+           }
+    }
+}
+
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	runtime.GOMAXPROCS(4)
     /*
     f, err := os.Create("cacher.prf")
 	if err != nil {
@@ -306,6 +345,9 @@ func main() {
 		config = mylib.Load(*confFile)
         fmt.Printf("using %s as config file\n", *confFile)
 	}
+    // start delta manager
+    deltaChan := make(chan string)
+    go deltaManager(deltaChan)
 
 	// start logger
 	LogC = make(chan *Msg, 100000)
@@ -328,7 +370,7 @@ func main() {
 			var w Sender
 			w.host = st.Host
 			w.port = st.Port
-			w.pipe = make(chan string, worker_chan_size)
+			w.pipe = make(chan string, config.ChanLimit)
 			w.index = index
 			r.Add(st.Host)
 			index++
@@ -344,6 +386,7 @@ func main() {
 	boss.ring = r
 	boss.single = 0
     boss.port = config.Port
+    boss.deltaChan = deltaChan
 	// if we have a single host, than we can ignore hash ring mess
 	// and do simple rr rotation of senders
 	if len(boss.ring.Members()) == 1 {
@@ -356,6 +399,7 @@ func main() {
 	// start listener
 	ln, err := net.Listen("tcp", ":"+config.Port)
     log("info", fmt.Sprintf("Started on %s port", config.Port))
+    log("info", fmt.Sprintf("worker chanLimit %d", config.ChanLimit))
 	if err != nil {
 		log("error", fmt.Sprintf("Unable to start listener, %v", err))
 		os.Exit(1)

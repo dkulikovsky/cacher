@@ -20,6 +20,7 @@ type Config struct {
     LogFile string
     Storage string
     Storages []*Storage
+    ChanLimit int
     Rf int
 }
 
@@ -29,10 +30,10 @@ type configFile struct {
 
 const defaultConfig = `
     [main]
-    port = 8766
+    port = 8765
     logLevel = 10
     logFile = ./debug_123.log
-    storage = 127.0.0.1:9000:1
+    storage = 127.0.0.1:8123:1
     Rf = 1
 `
 
