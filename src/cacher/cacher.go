@@ -31,6 +31,8 @@ var (
 	listen_port string = "8765"
 	LogC        chan *Msg
     confFile        *string = flag.String("config", "config.ini", "config file")
+    listenPort            *string = flag.String("port", "8765", "listen port for incoming data")
+    deltaPort       *string = flag.String("deltaPort", "9876", "port for delta handler")
 )
 
 type Sender struct {
@@ -283,8 +285,7 @@ func parse(input string, boss Boss) {
 			}
 		}
         // send metric to deltaManager
-        log("debug", fmt.Sprintf("sending %s to deltaChan", metric))
-        boss.deltaChan <- metric
+        //boss.deltaChan <- metric
 	} else {
 		log("error", fmt.Sprintf("[Error] Bad formated input: %s", input))
 	}
@@ -296,26 +297,69 @@ func deltaHandler(w http.ResponseWriter, r *http.Request) {
     delta := Delta
     Delta = nil
     DeltaLock.Unlock()
-    //fmt.Printf("got request, result %v\n", delta)
     fmt.Fprintf(w, strings.Join(delta, "\n"))
+    log("info:deltaManager", fmt.Sprintf("sent %d new metrics", len(delta)))
 }
 
-func deltaServer() {
+func deltaServer(port string) {
     http.HandleFunc("/delta", deltaHandler)
-    http.ListenAndServe(":9876", nil)
+    log("debug:deltaManager", fmt.Sprintf("Starting delta server on %s port", port))
+    err := http.ListenAndServe("0.0.0.0:"+port, nil)
+    if err != nil {
+        log("fatal:deltaManager", fmt.Sprintf("failed to start delta server, err = %v", err))
+    }
+
 }
 
-func deltaManager(metrics chan string) {
-    go deltaServer()
+func loadCache(senders []Sender) map[string]int {
+
+    // ugly way to set timeout
+	transport := http.Transport{
+		Dial: dialTimeout,
+	}
+	client := http.Client{
+		Transport: &transport,
+	}
+
     cache := make(map[string]int)
+    hosts_done := make(map[string]int)
+    for _,w := range(senders) {
+            _, ok := hosts_done[w.host]
+            if ok {
+                    continue
+            } else {
+                    hosts_done[w.host] = 1
+            }
+		url := fmt.Sprintf("http://%s:%d", w.host, w.port)
+		resp, err := client.Post(url,"text/xml",bytes.NewBufferString("SELECT Distinct(Path) from graphite"))
+		if err != nil {
+            log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
+            continue
+		}
+        body := bufio.NewReader(resp.Body)
+        for {
+    		line, _, err := body.ReadLine()
+	    	if err != nil {
+                break
+            }
+            cache[string(line)] = 1
+        }
+		resp.Body.Close()
+    }
+    return cache
+}
+
+func deltaManager(metrics chan string, senders []Sender, deltaPort string) {
+    go deltaServer(deltaPort)
+    log("info:deltaManager","loading cache")
+    cache := loadCache(senders)
+    log("info:deltaManager", fmt.Sprintf("loaded %d", len(cache)))
     for {
            m := <- metrics
            _, ok := cache[m]
-           fmt.Printf("got %s\n", m)
            if !ok {
                DeltaLock.Lock()
                Delta = append(Delta, m)
-               // log("debug",fmt.Sprintf("appended %s to delta\n", m))
                DeltaLock.Unlock()
                cache[m] = 1
            }
@@ -337,6 +381,12 @@ func main() {
 //	defer pprof.StopCPUProfile()
 	// parse config
     flag.Parse()
+  if flag.NFlag() != 3 {
+    fmt.Printf("usage: cacher -config config_file -port listen_port -deltaPort delta_port\n")
+    flag.PrintDefaults()
+    os.Exit(1)
+  }
+
 	var config mylib.Config
 	if _, err := os.Stat(*confFile); os.IsNotExist(err) {
 		fmt.Printf("no such file: %s, loading default\n", *confFile)
@@ -345,9 +395,6 @@ func main() {
 		config = mylib.Load(*confFile)
         fmt.Printf("using %s as config file\n", *confFile)
 	}
-    // start delta manager
-    deltaChan := make(chan string)
-    go deltaManager(deltaChan)
 
 	// start logger
 	LogC = make(chan *Msg, 100000)
@@ -379,13 +426,17 @@ func main() {
 		}
 	}
 
+    // start delta manager
+    deltaChan := make(chan string, 5000000)
+    go deltaManager(deltaChan,workers, *deltaPort)
+
 	// create Boss var (used to hide tons of vars in functions stack)
 	var boss Boss
 	boss.senders = workers
 	boss.rf = config.Rf
 	boss.ring = r
 	boss.single = 0
-    boss.port = config.Port
+    boss.port = *listenPort
     boss.deltaChan = deltaChan
 	// if we have a single host, than we can ignore hash ring mess
 	// and do simple rr rotation of senders
@@ -397,8 +448,8 @@ func main() {
 	go monitor(mon, boss)
 
 	// start listener
-	ln, err := net.Listen("tcp", ":"+config.Port)
-    log("info", fmt.Sprintf("Started on %s port", config.Port))
+	ln, err := net.Listen("tcp", ":" + *listenPort)
+    log("info", fmt.Sprintf("Started on %s port", *listenPort))
     log("info", fmt.Sprintf("worker chanLimit %d", config.ChanLimit))
 	if err != nil {
 		log("error", fmt.Sprintf("Unable to start listener, %v", err))
