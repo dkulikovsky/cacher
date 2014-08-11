@@ -25,11 +25,15 @@ binary-arch: clean
 	mkdir -p $(PKGDIR)/usr/bin
 	cp $(GOPATH)/bin/* $(PKGDIR)/usr/bin/
 	dh_strip
+	dh_installinit --no-start
+	dh_install
+	dh_clearvcs
 	dh_compress
 	dh_fixperms
 	dh_installdeb
 	dh_gencontrol
 	dh_md5sums
+	dh_installcron
 	dh_builddeb
 
 binary: binary-arch

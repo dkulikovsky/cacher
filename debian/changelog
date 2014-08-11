@@ -1,3 +1,9 @@
+cacher (0.1.6) unstable; urgency=low
+
+  * added scripts, confs, cron and init 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Mon, 11 Aug 2014 21:24:39 +0400
+
 cacher (0.1.5) unstable; urgency=low
 
   * added cmd options for port and deltaport 
