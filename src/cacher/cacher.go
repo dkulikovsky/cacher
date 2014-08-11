@@ -23,7 +23,7 @@ import (
 import _ "net/http/pprof"
 
 const (
-	DEBUG            = 2
+	DEBUG            = 1
     layout           = "Jan 2, 2006 at 15:04:02"
 )
 
@@ -33,6 +33,7 @@ var (
     confFile        *string = flag.String("config", "config.ini", "config file")
     listenPort            *string = flag.String("port", "8765", "listen port for incoming data")
     deltaPort       *string = flag.String("deltaPort", "9876", "port for delta handler")
+    logFile         *string = flag.String("log", "/var/log/cacher.log", "port for delta handler")
 )
 
 type Sender struct {
@@ -183,7 +184,7 @@ func sender(sender Sender, send_mon *int32) {
 func monitor(mon *Mmon, boss Boss) {
 	// just pick up first sender all the time, kiss
 	sender := boss.senders[0]
-	ticker := time.Tick(1 * time.Second)
+	ticker := time.Tick(60 * time.Second)
 	for {
 		select {
 		case <-ticker:
@@ -381,8 +382,8 @@ func main() {
 //	defer pprof.StopCPUProfile()
 	// parse config
     flag.Parse()
-  if flag.NFlag() != 3 {
-    fmt.Printf("usage: cacher -config config_file -port listen_port -deltaPort delta_port\n")
+  if flag.NFlag() != 4 {
+    fmt.Printf("usage: cacher -config config_file -log log_file -port listen_port -deltaPort delta_port\n")
     flag.PrintDefaults()
     os.Exit(1)
   }
@@ -398,8 +399,8 @@ func main() {
 
 	// start logger
 	LogC = make(chan *Msg, 100000)
-    fmt.Printf("strating logger with %s\n", config.LogFile)
-	go logger_loop(LogC, config.LogFile)
+    fmt.Printf("strating logger with %s\n", *logFile)
+	go logger_loop(LogC, *logFile)
 	log("info", "Starting")
 
 	// set hash ring object

@@ -16,7 +16,6 @@ type Storage struct {
 
 type Config struct {
     LogLevel string
-    LogFile string
     Storage string
     Storages []*Storage
     ChanLimit int
@@ -30,7 +29,6 @@ type configFile struct {
 const defaultConfig = `
     [main]
     logLevel = 10
-    logFile = ./debug_123.log
     storage = 127.0.0.1:8123:1
     Rf = 1
 `

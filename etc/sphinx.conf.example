@@ -1,0 +1,59 @@
+source path_src_plain 
+{
+    type = xmlpipe2
+    xmlpipe_command = python /usr/local/bin/gen_ch_index.py
+}
+
+source path_src_update
+{
+    type = xmlpipe2
+    xmlpipe_command = python /usr/local/bin/gen_cacher_delta.py
+}
+
+index path
+{
+    path = /var/lib/sphinxsearch/data/path.index
+    mlock = 1
+    morphology = none
+    min_stemming_len = 512
+    min_word_len = 5
+    source = path_src_plain
+    charset_type = utf-8
+    charset_table = 0..9, A..Z->a..z, a..z, _, -, ., U+2E
+    min_infix_len = 3
+    enable_star = 1
+    phrase_boundary = !
+    docinfo = extern
+}
+
+index update:path {
+    path = /var/lib/sphinxsearch/data/path_update.index
+    source = path_src_update
+}
+
+index delta:path {
+    path = /var/lib/sphinxsearch/data/path_delta.index
+    source = path_src_update
+}
+
+searchd
+{
+	listen			= 127.0.0.1:9312
+#	listen			= 9306:mysql41
+	log			= /var/log/sphinxsearch/searchd.log
+	query_log		= /var/log/sphinxsearch/query.log
+	read_timeout		= 5
+	client_timeout		= 300
+	max_children		= 30
+	pid_file		= /var/run/sphinxsearch/searchd.pid
+	max_matches		= 1000000
+	seamless_rotate		= 1
+	preopen_indexes		= 1
+	unlink_old		= 1
+	mva_updates_pool	= 1M
+	max_packet_size		= 8M
+	max_filters		= 256
+	max_filter_values	= 4096
+	max_batch_queries	= 32
+	workers			= threads # for RT to work
+}
