@@ -1,4 +1,0 @@
-scripts/* /usr/local/bin/
-etc/cacher/* etc/cacher/
-etc/cacher/init/* etc/init/
-etc/sphinx.conf.example etc/sphinxsearch/
