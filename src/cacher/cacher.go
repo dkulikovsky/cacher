@@ -24,7 +24,8 @@ import _ "net/http/pprof"
 
 const (
 	DEBUG          = 1
-	MAX_DELTA_SIZE = 10000
+	MAX_DELTA_SIZE = 10000   // limit on delta size
+	LOADLIMIT      = 1000000 // sql limit on cache loader
 	layout         = "Jan 2, 2006 at 15:04:02"
 )
 
@@ -333,20 +334,30 @@ func loadCache(senders []Sender) map[string]int {
 			hosts_done[w.host] = 1
 		}
 		url := fmt.Sprintf("http://%s:%d", w.host, w.port)
-		resp, err := client.Post(url, "text/xml", bytes.NewBufferString("SELECT Distinct(Path) from graphite"))
-		if err != nil {
-			log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
-			continue
-		}
-		body := bufio.NewReader(resp.Body)
+		limit := 0
 		for {
-			line, _, err := body.ReadLine()
+			req := fmt.Sprintf("SELECT Distinct(Path) from graphite LIMIT %d, %d", limit, LOADLIMIT)
+			resp, err := client.Post(url, "text/xml", bytes.NewBufferString(req))
+			limit = limit + LOADLIMIT
 			if err != nil {
+				log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
+				continue
+			}
+			body := bufio.NewReader(resp.Body)
+			lines := 0
+			for {
+				line, _, err := body.ReadLine()
+				if err != nil {
+					break
+				}
+				cache[string(line)] = 1
+				lines++
+			}
+			if lines == 0 {
 				break
 			}
-			cache[string(line)] = 1
+			resp.Body.Close()
 		}
-		resp.Body.Close()
 	}
 	return cache
 }
@@ -373,10 +384,10 @@ func deltaManager(metrics chan string, senders []Sender, deltaPort string) {
 func main() {
 	runtime.GOMAXPROCS(4)
 	/*
-	    f, err := os.Create("cacher.prf")
-		if err != nil {
-			os.Exit(1)
-		}
+		    f, err := os.Create("cacher.prf")
+			if err != nil {
+				os.Exit(1)
+			}
 	*/
 	go func() {
 		http.ListenAndServe("0.0.0.0:6060", nil)
