@@ -24,8 +24,7 @@ import _ "net/http/pprof"
 
 const (
 	DEBUG          = 1
-	MAX_DELTA_SIZE = 10000   // limit on delta size
-	LOADLIMIT      = 1000000 // sql limit on cache loader
+	MAX_DELTA_SIZE = 10000 // limit on delta size
 	layout         = "Jan 2, 2006 at 15:04:02"
 )
 
@@ -112,11 +111,11 @@ func format_time(t time.Time) string {
 }
 
 func dialTimeout(network, addr string) (net.Conn, error) {
-	c, err := net.DialTimeout(network, addr, time.Duration(30*time.Second))
+	c, err := net.DialTimeout(network, addr, time.Duration(60*time.Second))
 	if err != nil {
 		return c, err
 	}
-	c.SetDeadline(time.Now().Add(time.Duration(30 * time.Second)))
+	c.SetDeadline(time.Now().Add(time.Duration(60 * time.Second)))
 	return c, err
 }
 
@@ -333,31 +332,25 @@ func loadCache(senders []Sender) map[string]int {
 		} else {
 			hosts_done[w.host] = 1
 		}
+
 		url := fmt.Sprintf("http://%s:%d", w.host, w.port)
-		limit := 0
-		for {
-			req := fmt.Sprintf("SELECT Distinct(Path) from graphite LIMIT %d, %d", limit, LOADLIMIT)
-			resp, err := client.Post(url, "text/xml", bytes.NewBufferString(req))
-			limit = limit + LOADLIMIT
-			if err != nil {
-				log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
-				continue
-			}
-			body := bufio.NewReader(resp.Body)
-			lines := 0
-			for {
-				line, _, err := body.ReadLine()
-				if err != nil {
-					break
-				}
-				cache[string(line)] = 1
-				lines++
-			}
-			if lines == 0 {
-				break
-			}
-			resp.Body.Close()
+		req := fmt.Sprintf("SELECT Distinct(Path) from graphite")
+		resp, err := client.Post(url, "text/xml", bytes.NewBufferString(req))
+		defer resp.Body.Close()
+
+		if err != nil {
+			log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
+			continue
 		}
+		body := bufio.NewScanner(resp.Body)
+		for body.Scan() {
+			line := body.Text()
+			cache[line] = 1
+		}
+		if err := body.Err(); err != nil {
+			log("error", fmt.Sprintf("failed to parse response from %s:%d, err: %v", w.host, w.port, err))
+		}
+        log("info", fmt.Sprintf("loaded data from %s:%d, cache size now %d", w.host, w.port, len(cache)))
 	}
 	return cache
 }
