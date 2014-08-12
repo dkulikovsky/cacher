@@ -9,8 +9,8 @@ lockfile-touch $lockfile &
 LOCKPID="$!"
 
 # just run indexer
-/usr/bin/indexer --rotate --merge update delta
-/usr/bin/indexer --rotate delta
+/usr/bin/indexer --noprogress --rotate --merge update delta
+/usr/bin/indexer --noprogress --rotate delta
  
 kill "${LOCKPID}"
 lockfile-remove $lockfile
