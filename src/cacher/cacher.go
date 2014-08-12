@@ -184,7 +184,7 @@ func sender(sender Sender, send_mon *int32) {
 func monitor(mon *Mmon, boss Boss) {
 	// just pick up first sender all the time, kiss
 	sender := boss.senders[0]
-	ticker := time.Tick(60 * time.Second)
+	ticker := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-ticker:
@@ -196,9 +196,9 @@ func monitor(mon *Mmon, boss Boss) {
 
 func send_mon_data(m int32, r int32, c int32, port string, sender Sender) {
 	ts := time.Now()
-	out := fmt.Sprintf("('one_sec.int_%s.metrics_send', %d, %d, '%s'),", port, m, ts.Unix(), ts.Format("2006-01-02"))
-	out = fmt.Sprintf("%s('one_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), ts.Format("2006-01-02"))
-	out = fmt.Sprintf("%s('one_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), ts.Format("2006-01-02"))
+	out := fmt.Sprintf("('five_sec.int_%s.metrics_send', %d, %d, '%s'),", port, m, ts.Unix(), ts.Format("2006-01-02"))
+	out = fmt.Sprintf("%s('five_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), ts.Format("2006-01-02"))
+	out = fmt.Sprintf("%s('five_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), ts.Format("2006-01-02"))
 //	log("debug", fmt.Sprintf("MONITOR: %s", out))
 	send_data(out, sender)
 }
@@ -286,7 +286,7 @@ func parse(input string, boss Boss) {
 			}
 		}
         // send metric to deltaManager
-        //boss.deltaChan <- metric
+        boss.deltaChan <- metric
 	} else {
 		log("error", fmt.Sprintf("[Error] Bad formated input: %s", input))
 	}
