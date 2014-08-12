@@ -43,11 +43,11 @@ print xml
 
 step = 100000
 pos = 0
-for port in xrange(conf["port"], conf["instances"]):
+for port in xrange(conf["deltaport"], conf["deltaport"] + conf["instances"]):
     # fetch data from clickhouse with limit
     data = requests.get("http://127.0.0.1:%d/delta" % port)
     if len(data.text) == 0:
-        break
+        continue 
     for item in data.text.split("\n"):
         item = str(item)
         if not item:
