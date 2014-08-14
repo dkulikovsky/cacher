@@ -9,7 +9,7 @@ lockfile-touch $lockfile &
 LOCKPID="$!"
 
 # just run indexer
-/usr/bin/indexer --rotate path
+/usr/bin/indexer --noprogress --rotate path
  
 kill "${LOCKPID}"
 lockfile-remove $lockfile

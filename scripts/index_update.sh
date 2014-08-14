@@ -15,8 +15,8 @@ lockfile-touch $delta_lockfile &
 DELTA_LOCKPID="$!"
 
 # just run indexer
-/usr/bin/indexer --rotate update
-/usr/bin/indexer --rotate delta
+/usr/bin/indexer --noprogress --rotate update
+/usr/bin/indexer --noprogress --rotate delta
  
 kill "${DELTA_LOCKPID}"
 lockfile-remove $delta_lockfile
