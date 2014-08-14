@@ -1,3 +1,10 @@
+cacher (0.1.7) unstable; urgency=low
+
+  * fixed some scripts
+  * disabled delta caching 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 14 Aug 2014 15:49:16 +0400
+
 cacher (0.1.6) unstable; urgency=low
 
   * added scripts, confs, cron and init 
