@@ -20,6 +20,7 @@ type Config struct {
     Storages []*Storage
     ChanLimit int
     Rf int
+    EnableDelta int
 }
 
 type configFile struct {

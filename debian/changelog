@@ -1,40 +1,59 @@
-cacher (0.1.6) unstable; urgency=low
+graphite-ch-cacher (0.1.9) unstable; urgency=low
+
+  * fixex path 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 14 Aug 2014 16:13:18 +0400
+
+graphite-ch-cacher (0.1.8) unstable; urgency=low
+
+  * fixed deps 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 14 Aug 2014 16:09:28 +0400
+
+graphite-ch-cacher (0.1.7) unstable; urgency=low
+
+  * fixed some scripts
+  * disabled delta caching 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 14 Aug 2014 15:49:16 +0400
+
+graphite-ch-cacher (0.1.6) unstable; urgency=low
 
   * added scripts, confs, cron and init 
 
  -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Mon, 11 Aug 2014 21:24:39 +0400
 
-cacher (0.1.5) unstable; urgency=low
+graphite-ch-cacher (0.1.5) unstable; urgency=low
 
   * added cmd options for port and deltaport 
 
  -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Fri, 08 Aug 2014 19:58:20 +0400
 
-cacher (0.1.4) unstable; urgency=low
+graphite-ch-cacher (0.1.4) unstable; urgency=low
 
   * added port for deltaServer
 
  -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 05 Aug 2014 17:52:44 +0400
 
-cacher (0.1.3) unstable; urgency=low
+graphite-ch-cacher (0.1.3) unstable; urgency=low
 
   * added loadCache 
 
  -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Sat, 02 Aug 2014 19:27:26 +0400
 
-cacher (0.1.2) unstable; urgency=low
+graphite-ch-cacher (0.1.2) unstable; urgency=low
 
   * added delta handler 
 
  -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Fri, 01 Aug 2014 22:55:34 +0400
 
-cacher (0.1.1) unstable; urgency=low
+graphite-ch-cacher (0.1.1) unstable; urgency=low
 
   * now port is defined via conffile 
 
  -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 24 Jul 2014 20:48:09 +0400
 
-cacher (0.1.0) unstable; urgency=low
+graphite-ch-cacher (0.1.0) unstable; urgency=low
 
   * packed in deb 
 

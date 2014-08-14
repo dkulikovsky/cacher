@@ -1,4 +1,4 @@
-Source: cacher
+Source: graphite-ch-cacher
 Section: devel
 Priority: extra
 Maintainer: Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>
@@ -6,8 +6,8 @@ Build-Depends: debhelper (>= 7.0.50~), golang-stable
 Standards-Version: 3.9.1
 Homepage: http://bsgitlab.yandex-team.ru/dkulikovsky/cacher
 
-Package: cacher
+Package: graphite-ch-cacher
 Architecture: amd64
-Depends: ${misc:Depends}
+Depends: ${misc:Depends}, python-xxhash
 Description: graphite backend 
  Graphite backend written in go and made specially for clickhouse.

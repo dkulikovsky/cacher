@@ -7,7 +7,7 @@ export DH_VERBOSE=1
 export GOPATH=$(CURDIR)
 #export GOROOT="/home/dkulikovsky/work/yabs/build/golang/latest/go/"
 
-PKGDIR=debian/cacher
+PKGDIR=debian/graphite-ch-cacher
 
 %:
 	dh $@ 
