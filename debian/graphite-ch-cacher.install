@@ -1,4 +1,4 @@
 scripts/* /usr/local/bin/
-etc/graphite-ch-cacher/* etc/graphite-ch-cacher/
+etc/cacher/* etc/cacher/
 etc/init/* etc/init/
 etc/sphinx.conf.example etc/sphinxsearch/
