@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.11) unstable; urgency=low
+
+  * removed bad index from config 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 14 Aug 2014 20:28:23 +0400
+
 graphite-ch-cacher (0.1.10) unstable; urgency=low
 
   * added init script 
