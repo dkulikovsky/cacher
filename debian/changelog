@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.9) unstable; urgency=low
+
+  * fixex path 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 14 Aug 2014 16:13:18 +0400
+
 graphite-ch-cacher (0.1.8) unstable; urgency=low
 
   * fixed deps 
