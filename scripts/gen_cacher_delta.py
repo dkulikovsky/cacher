@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import requests
-from pyhashxx import hashxx
+from xxhash import xxh64
 import sys, re, subprocess,string
 from os.path import isdir,isfile
 from os import mkdir
@@ -52,7 +52,7 @@ for port in xrange(conf["deltaport"], conf["deltaport"] + conf["instances"]):
         item = str(item)
         if not item:
             continue
-        xml = "<sphinx:document id=\"%d\"><path>%s</path><metric>%s</metric></sphinx:document>" % (hashxx(item), item, item)
+        xml = "<sphinx:document id=\"%d\"><path>%s</path><metric>%s</metric></sphinx:document>" % (xxh64(item), item, item)
         print "%s" % xml
 
     pos += step

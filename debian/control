@@ -8,6 +8,6 @@ Homepage: http://bsgitlab.yandex-team.ru/dkulikovsky/cacher
 
 Package: graphite-ch-cacher
 Architecture: amd64
-Depends: ${misc:Depends}, python-xxhash
+Depends: ${misc:Depends}, python-xxhash, python-requests
 Description: graphite backend 
  Graphite backend written in go and made specially for clickhouse.

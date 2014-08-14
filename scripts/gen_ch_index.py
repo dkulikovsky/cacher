@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import requests, re
-from pyhashxx import hashxx
+from xxhash import xxh64
 
 # global
 conf = "/etc/cacher/config.ini"
@@ -49,7 +49,7 @@ if __name__ == "__main__":
                 if not item:
                     continue
                 xml = "<sphinx:document id=\"%d\"><path>%s</path><metric>%s</metric><storage>%s</storage></sphinx:document>" % \
-                                     (hashxx(item+storage), item, item, storage)
+                                     (xxh64(item+storage), item, item, storage)
                 print "%s" % xml
         
             pos += step
