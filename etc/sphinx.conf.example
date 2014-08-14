@@ -10,12 +10,6 @@ source path_src_update
     xmlpipe_command = python /usr/local/bin/gen_cacher_delta.py
 }
 
-source int_source
-{
-    type = xmlpipe2
-    xmlpipe_command = python /usr/local/bin/gen_int.py
-}
-
 index path
 {
     path = /var/lib/sphinxsearch/data/path.index
@@ -40,11 +34,6 @@ index update:path {
 index delta:path {
     path = /var/lib/sphinxsearch/data/path_delta.index
     source = path_src_update
-}
-
-index int:path {
-    path =  /var/lib/sphinxsearch/data/int.index
-    source = int_source
 }
 
 indexer {
