@@ -10,13 +10,19 @@ source path_src_update
     xmlpipe_command = python /usr/local/bin/gen_cacher_delta.py
 }
 
+source int_source
+{
+    type = xmlpipe2
+    xmlpipe_command = python /usr/local/bin/gen_int.py
+}
+
 index path
 {
     path = /var/lib/sphinxsearch/data/path.index
     mlock = 1
     morphology = none
     min_stemming_len = 512
-    min_word_len = 5
+    min_word_len = 3
     source = path_src_plain
     charset_type = utf-8
     charset_table = 0..9, A..Z->a..z, a..z, _, -, ., U+2E
@@ -34,6 +40,15 @@ index update:path {
 index delta:path {
     path = /var/lib/sphinxsearch/data/path_delta.index
     source = path_src_update
+}
+
+index int:path {
+    path =  /var/lib/sphinxsearch/data/int.index
+    source = int_source
+}
+
+indexer {
+    mem_limit = 256M
 }
 
 searchd
