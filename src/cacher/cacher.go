@@ -374,19 +374,14 @@ func deltaManager(metrics chan string, senders []Sender, deltaPort string) {
 	}
 }
 
+func bogusDelta(input chan string) {
+    for {
+            <-input
+    }
+    }
+
 func main() {
 	runtime.GOMAXPROCS(4)
-	/*
-		    f, err := os.Create("cacher.prf")
-			if err != nil {
-				os.Exit(1)
-			}
-	*/
-	go func() {
-		http.ListenAndServe("0.0.0.0:6060", nil)
-	}()
-	//	pprof.StartCPUProfile(f)
-	//	defer pprof.StopCPUProfile()
 	// parse config
 	flag.Parse()
 	if flag.NFlag() != 4 {
@@ -434,8 +429,13 @@ func main() {
 	}
 
 	// start delta manager
-	deltaChan := make(chan string, 5000000)
-	go deltaManager(deltaChan, workers, *deltaPort)
+    deltaChan := make(chan string, 5000000)
+    if config.EnableDelta > 0 {
+        log("debug", fmt.Sprintf("Delta enabled on %s", *deltaPort))
+    	go deltaManager(deltaChan, workers, *deltaPort)
+    } else {
+        go bogusDelta(deltaChan)
+    }
 
 	// create Boss var (used to hide tons of vars in functions stack)
 	var boss Boss
@@ -473,12 +473,9 @@ func main() {
 		} else {
 			log("debug", fmt.Sprintf("Failed to accept connection, %v", err))
 		}
-		//pprof.WriteHeapProfile(f)
 	}
 
 	log("info", "Done")
 	// close log
 	LogC <- &Msg{}
-
-	//f.Close()
 }
