@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"cacher/mylib"
+	"flag"
 	"fmt"
 	"github.com/stathat/consistent"
 	"math/rand"
@@ -11,29 +12,29 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-    "flag"
-//	"runtime/pprof"
+	//	"runtime/pprof"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
-    "sync"
 	"time"
 )
 
 import _ "net/http/pprof"
 
 const (
-	DEBUG            = 1
-    layout           = "Jan 2, 2006 at 15:04:02"
+	DEBUG          = 1
+	MAX_DELTA_SIZE = 10000 // limit on delta size
+	layout         = "Jan 2, 2006 at 15:04:02"
 )
 
 var (
 	listen_port string = "8765"
 	LogC        chan *Msg
-    confFile        *string = flag.String("config", "config.ini", "config file")
-    listenPort            *string = flag.String("port", "8765", "listen port for incoming data")
-    deltaPort       *string = flag.String("deltaPort", "9876", "port for delta handler")
-    logFile         *string = flag.String("log", "/var/log/cacher.log", "port for delta handler")
+	confFile    *string = flag.String("config", "config.ini", "config file")
+	listenPort  *string = flag.String("port", "8765", "listen port for incoming data")
+	deltaPort   *string = flag.String("deltaPort", "9876", "port for delta handler")
+	logFile     *string = flag.String("log", "/var/log/cacher.log", "port for delta handler")
 )
 
 type Sender struct {
@@ -44,12 +45,12 @@ type Sender struct {
 }
 
 type Boss struct {
-	senders []Sender
-	rf      int
-	ring    *consistent.Consistent
-	single  int
-    port string
-    deltaChan chan string
+	senders   []Sender
+	rf        int
+	ring      *consistent.Consistent
+	single    int
+	port      string
+	deltaChan chan string
 }
 
 type Mmon struct {
@@ -110,11 +111,11 @@ func format_time(t time.Time) string {
 }
 
 func dialTimeout(network, addr string) (net.Conn, error) {
-	c, err := net.DialTimeout(network, addr, time.Duration(30*time.Second))
+	c, err := net.DialTimeout(network, addr, time.Duration(60*time.Second))
 	if err != nil {
 		return c, err
 	}
-	c.SetDeadline(time.Now().Add(time.Duration(30 * time.Second)))
+	c.SetDeadline(time.Now().Add(time.Duration(60 * time.Second)))
 	return c, err
 }
 
@@ -135,8 +136,8 @@ func send_data(data string, c Sender) {
 		return
 	}
 	defer resp.Body.Close()
-//	status := resp.StatusCode
-//    log("debug", fmt.Sprintf("executer insert, status %d, host %s:%d:%d, len %d", status, c.host,c.port,c.index, len(data)))
+	//	status := resp.StatusCode
+	//    log("debug", fmt.Sprintf("executer insert, status %d, host %s:%d:%d, len %d", status, c.host,c.port,c.index, len(data)))
 }
 
 func singleSender(senders []Sender) Sender {
@@ -199,7 +200,7 @@ func send_mon_data(m int32, r int32, c int32, port string, sender Sender) {
 	out := fmt.Sprintf("('five_sec.int_%s.metrics_send', %d, %d, '%s'),", port, m, ts.Unix(), ts.Format("2006-01-02"))
 	out = fmt.Sprintf("%s('five_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), ts.Format("2006-01-02"))
 	out = fmt.Sprintf("%s('five_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), ts.Format("2006-01-02"))
-//	log("debug", fmt.Sprintf("MONITOR: %s", out))
+	//	log("debug", fmt.Sprintf("MONITOR: %s", out))
 	send_data(out, sender)
 }
 
@@ -207,7 +208,7 @@ func line_reader(r *bufio.Reader, lines chan string) {
 	for {
 		line, _, err := r.ReadLine()
 		if err != nil {
-            // my oh my, such an ugly way to stop accepting data via channels :(
+			// my oh my, such an ugly way to stop accepting data via channels :(
 			lines <- "__end_of_data__"
 			break
 		}
@@ -285,8 +286,8 @@ func parse(input string, boss Boss) {
 				w.pipe <- fmt.Sprintf("('%s', %s, %d, '%s')", metric, data, t.Unix(), t.Format("2006-01-02"))
 			}
 		}
-        // send metric to deltaManager
-        boss.deltaChan <- metric
+		// send metric to deltaManager
+		boss.deltaChan <- metric
 	} else {
 		log("error", fmt.Sprintf("[Error] Bad formated input: %s", input))
 	}
@@ -294,27 +295,27 @@ func parse(input string, boss Boss) {
 }
 
 func deltaHandler(w http.ResponseWriter, r *http.Request) {
-    DeltaLock.Lock()
-    delta := Delta
-    Delta = nil
-    DeltaLock.Unlock()
-    fmt.Fprintf(w, strings.Join(delta, "\n"))
-    log("info:deltaManager", fmt.Sprintf("sent %d new metrics", len(delta)))
+	DeltaLock.Lock()
+	delta := Delta
+	Delta = nil
+	DeltaLock.Unlock()
+	fmt.Fprintf(w, strings.Join(delta, "\n"))
+	log("info:deltaManager", fmt.Sprintf("sent %d new metrics", len(delta)))
 }
 
 func deltaServer(port string) {
-    http.HandleFunc("/delta", deltaHandler)
-    log("debug:deltaManager", fmt.Sprintf("Starting delta server on %s port", port))
-    err := http.ListenAndServe("0.0.0.0:"+port, nil)
-    if err != nil {
-        log("fatal:deltaManager", fmt.Sprintf("failed to start delta server, err = %v", err))
-    }
+	http.HandleFunc("/delta", deltaHandler)
+	log("debug:deltaManager", fmt.Sprintf("Starting delta server on %s port", port))
+	err := http.ListenAndServe("0.0.0.0:"+port, nil)
+	if err != nil {
+		log("fatal:deltaManager", fmt.Sprintf("failed to start delta server, err = %v", err))
+	}
 
 }
 
 func loadCache(senders []Sender) map[string]int {
 
-    // ugly way to set timeout
+	// ugly way to set timeout
 	transport := http.Transport{
 		Dial: dialTimeout,
 	}
@@ -322,71 +323,77 @@ func loadCache(senders []Sender) map[string]int {
 		Transport: &transport,
 	}
 
-    cache := make(map[string]int)
-    hosts_done := make(map[string]int)
-    for _,w := range(senders) {
-            _, ok := hosts_done[w.host]
-            if ok {
-                    continue
-            } else {
-                    hosts_done[w.host] = 1
-            }
-		url := fmt.Sprintf("http://%s:%d", w.host, w.port)
-		resp, err := client.Post(url,"text/xml",bytes.NewBufferString("SELECT Distinct(Path) from graphite"))
-		if err != nil {
-            log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
-            continue
+	cache := make(map[string]int)
+	hosts_done := make(map[string]int)
+	for _, w := range senders {
+		_, ok := hosts_done[w.host]
+		if ok {
+			continue
+		} else {
+			hosts_done[w.host] = 1
 		}
-        body := bufio.NewReader(resp.Body)
-        for {
-    		line, _, err := body.ReadLine()
-	    	if err != nil {
-                break
-            }
-            cache[string(line)] = 1
-        }
-		resp.Body.Close()
-    }
-    return cache
+
+		url := fmt.Sprintf("http://%s:%d", w.host, w.port)
+		req := fmt.Sprintf("SELECT Distinct(Path) from graphite")
+		resp, err := client.Post(url, "text/xml", bytes.NewBufferString(req))
+		defer resp.Body.Close()
+
+		if err != nil {
+			log("error", fmt.Sprintf("failed to load cache from %s, error: %v", w.host, err))
+			continue
+		}
+		body := bufio.NewScanner(resp.Body)
+		for body.Scan() {
+			line := body.Text()
+			cache[line] = 1
+		}
+		if err := body.Err(); err != nil {
+			log("error", fmt.Sprintf("failed to parse response from %s:%d, err: %v", w.host, w.port, err))
+		}
+        log("info", fmt.Sprintf("loaded data from %s:%d, cache size now %d", w.host, w.port, len(cache)))
+	}
+	return cache
 }
 
 func deltaManager(metrics chan string, senders []Sender, deltaPort string) {
-    go deltaServer(deltaPort)
-    log("info:deltaManager","loading cache")
-    cache := loadCache(senders)
-    log("info:deltaManager", fmt.Sprintf("loaded %d", len(cache)))
-    for {
-           m := <- metrics
-           _, ok := cache[m]
-           if !ok {
-               DeltaLock.Lock()
-               Delta = append(Delta, m)
-               DeltaLock.Unlock()
-               cache[m] = 1
-           }
-    }
+	go deltaServer(deltaPort)
+	log("info:deltaManager", "loading cache")
+	cache := loadCache(senders)
+	log("info:deltaManager", fmt.Sprintf("loaded %d", len(cache)))
+	for {
+		m := <-metrics
+		_, ok := cache[m]
+		if !ok {
+			if len(Delta) < MAX_DELTA_SIZE {
+				DeltaLock.Lock()
+				Delta = append(Delta, m)
+				DeltaLock.Unlock()
+				cache[m] = 1
+			}
+		}
+	}
 }
 
 func main() {
 	runtime.GOMAXPROCS(4)
-    /*
-    f, err := os.Create("cacher.prf")
-	if err != nil {
+	/*
+		    f, err := os.Create("cacher.prf")
+			if err != nil {
+				os.Exit(1)
+			}
+	*/
+	go func() {
+		http.ListenAndServe("0.0.0.0:6060", nil)
+	}()
+	//	pprof.StartCPUProfile(f)
+	//	defer pprof.StopCPUProfile()
+	// parse config
+	flag.Parse()
+	if flag.NFlag() != 4 {
+		fmt.Printf("usage: cacher -config config_file -log log_file -port listen_port -deltaPort delta_port\n")
+		flag.PrintDefaults()
 		os.Exit(1)
 	}
-    */
-    go func() {
-        http.ListenAndServe("0.0.0.0:6060", nil)
-    }()
-//	pprof.StartCPUProfile(f)
-//	defer pprof.StopCPUProfile()
-	// parse config
-    flag.Parse()
-  if flag.NFlag() != 4 {
-    fmt.Printf("usage: cacher -config config_file -log log_file -port listen_port -deltaPort delta_port\n")
-    flag.PrintDefaults()
-    os.Exit(1)
-  }
 
 	var config mylib.Config
 	if _, err := os.Stat(*confFile); os.IsNotExist(err) {
@@ -394,12 +401,12 @@ func main() {
 		config = mylib.Load("")
 	} else {
 		config = mylib.Load(*confFile)
-        fmt.Printf("using %s as config file\n", *confFile)
+		fmt.Printf("using %s as config file\n", *confFile)
 	}
 
 	// start logger
 	LogC = make(chan *Msg, 100000)
-    fmt.Printf("strating logger with %s\n", *logFile)
+	fmt.Printf("strating logger with %s\n", *logFile)
 	go logger_loop(LogC, *logFile)
 	log("info", "Starting")
 
@@ -414,7 +421,6 @@ func main() {
 	index := 0
 	for _, st := range config.Storages {
 		for j := 0; j <= st.Num; j++ {
-			log("info", fmt.Sprintf("Starting %d worker", index))
 			var w Sender
 			w.host = st.Host
 			w.port = st.Port
@@ -427,9 +433,9 @@ func main() {
 		}
 	}
 
-    // start delta manager
-    deltaChan := make(chan string, 5000000)
-    go deltaManager(deltaChan,workers, *deltaPort)
+	// start delta manager
+	deltaChan := make(chan string, 5000000)
+	go deltaManager(deltaChan, workers, *deltaPort)
 
 	// create Boss var (used to hide tons of vars in functions stack)
 	var boss Boss
@@ -437,8 +443,8 @@ func main() {
 	boss.rf = config.Rf
 	boss.ring = r
 	boss.single = 0
-    boss.port = *listenPort
-    boss.deltaChan = deltaChan
+	boss.port = *listenPort
+	boss.deltaChan = deltaChan
 	// if we have a single host, than we can ignore hash ring mess
 	// and do simple rr rotation of senders
 	if len(boss.ring.Members()) == 1 {
@@ -449,9 +455,9 @@ func main() {
 	go monitor(mon, boss)
 
 	// start listener
-	ln, err := net.Listen("tcp", ":" + *listenPort)
-    log("info", fmt.Sprintf("Started on %s port", *listenPort))
-    log("info", fmt.Sprintf("worker chanLimit %d", config.ChanLimit))
+	ln, err := net.Listen("tcp", ":"+*listenPort)
+	log("info", fmt.Sprintf("Started on %s port", *listenPort))
+	log("info", fmt.Sprintf("worker chanLimit %d", config.ChanLimit))
 	if err != nil {
 		log("error", fmt.Sprintf("Unable to start listener, %v", err))
 		os.Exit(1)
@@ -467,12 +473,12 @@ func main() {
 		} else {
 			log("debug", fmt.Sprintf("Failed to accept connection, %v", err))
 		}
-    //pprof.WriteHeapProfile(f)
+		//pprof.WriteHeapProfile(f)
 	}
 
 	log("info", "Done")
 	// close log
 	LogC <- &Msg{}
 
-    //f.Close()
+	//f.Close()
 }
