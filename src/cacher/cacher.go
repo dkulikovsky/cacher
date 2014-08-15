@@ -65,7 +65,7 @@ type Msg struct {
 }
 
 // Delta object for metrics delta
-var Delta []string
+var Delta map[string]string
 var DeltaLock sync.Mutex
 
 func log(lvl string, msg string) {
@@ -299,7 +299,11 @@ func deltaHandler(w http.ResponseWriter, r *http.Request) {
 	delta := Delta
 	Delta = nil
 	DeltaLock.Unlock()
-	fmt.Fprintf(w, strings.Join(delta, "\n"))
+    result := ""
+    for k,v := range delta {
+        result += fmt.Sprintf("%s %s\n", k, v)
+    }
+	fmt.Fprintf(w, result)
 	log("info:deltaManager", fmt.Sprintf("sent %d new metrics", len(delta)))
 }
 
@@ -355,7 +359,7 @@ func loadCache(senders []Sender) map[string]int {
 	return cache
 }
 
-func deltaManager(metrics chan string, senders []Sender, deltaPort string) {
+func deltaManager(metrics chan string, senders []Sender, deltaPort string, boss Boss) {
 	go deltaServer(deltaPort)
 	log("info:deltaManager", "loading cache")
 	cache := loadCache(senders)
@@ -365,12 +369,32 @@ func deltaManager(metrics chan string, senders []Sender, deltaPort string) {
 		_, ok := cache[m]
 		if !ok {
 			if len(Delta) < MAX_DELTA_SIZE {
-				DeltaLock.Lock()
-				Delta = append(Delta, m)
-				DeltaLock.Unlock()
-				cache[m] = 1
-			}
-		}
+                // every new metric in deltaManager must have a storage
+                storage := ""
+                // if there is a single storage everything is easy
+        		if boss.single == 1 {
+                    storage = boss.senders[0].host
+        		} else {
+                    // but sometimes we can use multiply storage, than it's a hashring task to choose the right one
+        			r, err := boss.ring.GetN(m, boss.rf)
+        			if err != nil {
+        				log("error", fmt.Sprintf("Failed to get caches for metric %s, err %v", m, err))
+                        continue
+        			} 
+                    if len(r) > 0 {
+                        // daleta manager doesn't inquire about replication and awlays will show the first
+                        // storage in the ring, dublication because of replication is handled by main sphinx index - path
+                        storage = r[0]
+                    } else {
+                        log("error","Failed to get storage for some reason :(")
+                    }
+                } // single storage vs multistorage
+    			DeltaLock.Lock()
+        		Delta[m] = storage
+        		DeltaLock.Unlock()
+        		cache[m] = 1
+			} // MAX_DELTA_SIZE
+		} // if !ok
 	}
 }
 
@@ -428,17 +452,18 @@ func main() {
 		}
 	}
 
+	var boss Boss
+
 	// start delta manager
     deltaChan := make(chan string, 5000000)
     if config.EnableDelta > 0 {
         log("debug", fmt.Sprintf("Delta enabled on %s", *deltaPort))
-    	go deltaManager(deltaChan, workers, *deltaPort)
+    	go deltaManager(deltaChan, workers, *deltaPort, boss)
     } else {
         go bogusDelta(deltaChan)
     }
 
 	// create Boss var (used to hide tons of vars in functions stack)
-	var boss Boss
 	boss.senders = workers
 	boss.rf = config.Rf
 	boss.ring = r
