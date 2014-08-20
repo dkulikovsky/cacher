@@ -6,6 +6,8 @@ import (
     "os"
     "strings"
     "strconv"
+    "net"
+    "time"
 )
 
 type Storage struct {
@@ -83,3 +85,14 @@ func Load(cfgFile string) Config {
     cfg.Main.Storages = parseStorages(cfg.Main.Storage)
     return cfg.Main
 }
+
+func DialTimeout(network, addr string) (net.Conn, error) {
+	c, err := net.DialTimeout(network, addr, time.Duration(60*time.Second))
+	if err != nil {
+		return c, err
+	}
+	c.SetDeadline(time.Now().Add(time.Duration(60 * time.Second)))
+	return c, err
+}
+
+
