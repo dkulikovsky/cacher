@@ -3,19 +3,18 @@ package delta
 import (
 	"bufio"
 	"bytes"
+	"cacher/mylib"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
-    "log"
-    "cacher/mylib"
 )
 
 // Delta object for metrics delta
 var Delta map[string]string
 var DeltaLock sync.Mutex
 
-const	MAX_DELTA_SIZE = 10000 // limit on delta size
-
+const MAX_DELTA_SIZE = 10000 // limit on delta size
 
 func deltaHandler(w http.ResponseWriter, r *http.Request) {
 	DeltaLock.Lock()
@@ -124,4 +123,3 @@ func BogusDelta(input chan string) {
 		<-input
 	}
 }
-

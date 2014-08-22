@@ -2,7 +2,7 @@ package mylib
 
 import (
 	"github.com/stathat/consistent"
-    )
+)
 
 type Sender struct {
 	Port  int
@@ -25,5 +25,3 @@ type Mmon struct {
 	Rcv  int32
 	Conn int32
 }
-
-

@@ -3,8 +3,8 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"cacher/delta"
 	"cacher/mylib"
-    "cacher/delta"
 	"flag"
 	"fmt"
 	"github.com/stathat/consistent"
@@ -14,27 +14,27 @@ import (
 	"os"
 	"runtime"
 	//	"runtime/pprof"
+	"log"
 	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
-    "log"
 )
 
 import _ "net/http/pprof"
 
 const (
-	DEBUG          = 1
-	layout         = "Jan 2, 2006 at 15:04:02"
+	DEBUG  = 1
+	layout = "Jan 2, 2006 at 15:04:02"
 )
 
 var (
-	listen_port string = "8765"
+	listen_port string  = "8765"
 	confFile    *string = flag.String("config", "config.ini", "config file")
 	listenPort  *string = flag.String("port", "8765", "listen port for incoming data")
 	deltaPort   *string = flag.String("deltaPort", "9876", "port for delta handler")
 	logFile     *string = flag.String("log", "/var/log/cacher.log", "port for delta handler")
-    logger      *log.Logger
+	logger      *log.Logger
 )
 
 func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
@@ -210,7 +210,7 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 	out = fmt.Sprintf("%s('five_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), ts.Format("2006-01-02"))
 	out = fmt.Sprintf("%s('five_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), ts.Format("2006-01-02"))
 	//	log("debug", fmt.Sprintf("MONITOR: %s", out))
-//    logger.Printf("MONITOR: %s\n", out)
+	//    logger.Printf("MONITOR: %s\n", out)
 	send_data(out, sender)
 }
 
@@ -224,15 +224,12 @@ func startLogger(logf string) *log.Logger {
 	} else {
 		fmt.Printf("opened log file %s\n", logf)
 	}
-	defer logF.Close()
 
-    logW := bufio.NewWriter(logF)
-    logger = log.New(logW, "cacher: ", log.Ldate|log.Ltime|log.Lshortfile) 
-    //logger = log.New(os.Stdout, "cacher: ", log.Ldate|log.Ltime|log.Lshortfile) 
+	logger = log.New(logF, "cacher: ", log.Ldate|log.Ltime)
+	//logger = log.New(os.Stdout, "cacher: ", log.Ldate|log.Ltime|log.Lshortfile)
 	logger.Print("Starting")
-    return logger
+	return logger
 }
-
 
 func startWorkers(config mylib.Config, r *consistent.Consistent, mon *mylib.Mmon) []mylib.Sender {
 	workers := make([]mylib.Sender, 0)
@@ -250,7 +247,7 @@ func startWorkers(config mylib.Config, r *consistent.Consistent, mon *mylib.Mmon
 			go sender(w, &mon.Send)
 		}
 	}
-    return workers
+	return workers
 }
 
 func main() {
@@ -264,7 +261,7 @@ func main() {
 		os.Exit(1)
 	}
 
-    logger := startLogger(*logFile)
+	logger := startLogger(*logFile)
 
 	var config mylib.Config
 	if _, err := os.Stat(*confFile); os.IsNotExist(err) {
@@ -280,7 +277,7 @@ func main() {
 	// set up monitoring
 	mon := new(mylib.Mmon)
 	// spawn db writers and fill hash ring object
-    workers := startWorkers(config, r, mon)
+	workers := startWorkers(config, r, mon)
 
 	var boss mylib.Boss
 	deltaChan := make(chan string, 5000000)
