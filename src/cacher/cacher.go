@@ -217,7 +217,7 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 func startLogger(logf string) *log.Logger {
 	// start logger
 	fmt.Printf("strating logger with %s\n", logf)
-	logF, err := os.Create(logf)
+	logF, err := os.OpenFile(logf, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0655)
 	if err != nil {
 		fmt.Printf("Unable to create file %s, %v\n", logf, err)
 		os.Exit(1)
