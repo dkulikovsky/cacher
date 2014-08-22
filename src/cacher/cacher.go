@@ -210,7 +210,8 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 	out = fmt.Sprintf("%s('five_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), ts.Format("2006-01-02"))
 	out = fmt.Sprintf("%s('five_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), ts.Format("2006-01-02"))
 	//	log("debug", fmt.Sprintf("MONITOR: %s", out))
-	//send_data(out, sender)
+//    logger.Printf("MONITOR: %s\n", out)
+	send_data(out, sender)
 }
 
 func startLogger(logf string) *log.Logger {
@@ -227,6 +228,7 @@ func startLogger(logf string) *log.Logger {
 
     logW := bufio.NewWriter(logF)
     logger = log.New(logW, "cacher: ", log.Ldate|log.Ltime|log.Lshortfile) 
+    //logger = log.New(os.Stdout, "cacher: ", log.Ldate|log.Ltime|log.Lshortfile) 
 	logger.Print("Starting")
     return logger
 }
