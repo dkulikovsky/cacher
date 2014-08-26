@@ -1,0 +1,5 @@
+description "cacher"
+
+expect daemon
+
+exec /usr/local/bin/multi_cacher.py
