@@ -5,7 +5,7 @@ from os import mkdir
 from time import sleep
 
 # conf files
-multiconf = "/etc/cacher/multi.conf"
+multiconf = "/etc/cacher/multi.ini"
 conf = "/etc/cacher/config.ini"
 
 if not isfile(multiconf):
