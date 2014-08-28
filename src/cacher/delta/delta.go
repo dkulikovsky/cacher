@@ -80,6 +80,7 @@ func loadCache(senders []mylib.Sender, logger *log.Logger) map[string]int {
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
+    Delta = make(map[string]string)
 	go deltaServer(deltaPort, logger)
 	logger.Println("loading cache")
 	cache := loadCache(senders, logger)
