@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.15.2) unstable; urgency=low
+
+  * fixed empty delta bug 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 28 Aug 2014 15:56:37 +0400
+
 graphite-ch-cacher (0.1.15.1) unstable; urgency=low
 
   * fixed multi conf file name 
