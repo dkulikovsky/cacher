@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.15.3.exp) unstable; urgency=low
+
+  * moved from newbufferstring to strings.NewReader 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 17 Sep 2014 18:03:09 +0400
+
 graphite-ch-cacher (0.1.15.3) unstable; urgency=low
 
   * rebuild 

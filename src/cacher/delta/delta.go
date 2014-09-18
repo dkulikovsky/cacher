@@ -8,11 +8,13 @@ import (
 	"log"
 	"net/http"
 	"sync"
+    "unsafe"
 )
 
 // Delta object for metrics delta
 var Delta map[string]string
 var DeltaLock sync.Mutex
+var Cache map[string]int
 
 const MAX_DELTA_SIZE = 10000 // limit on delta size
 
@@ -26,6 +28,10 @@ func deltaHandler(w http.ResponseWriter, r *http.Request) {
 		result += fmt.Sprintf("%s %s\n", k, v)
 	}
 	fmt.Fprintf(w, result)
+}
+
+func deltaSize(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "%d", unsafe.Sizeof(Cache))
 }
 
 func deltaServer(port string, logger *log.Logger) {
@@ -80,14 +86,14 @@ func loadCache(senders []mylib.Sender, logger *log.Logger) map[string]int {
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
-    Delta = make(map[string]string)
+    Delta := make(map[string]string)
 	go deltaServer(deltaPort, logger)
 	logger.Println("loading cache")
-	cache := loadCache(senders, logger)
-	logger.Printf("loaded %d\n", len(cache))
+	Cache := loadCache(senders, logger)
+	logger.Printf("loaded %d\n", len(Cache))
 	for {
 		m := <-metrics
-		_, ok := cache[m]
+		_, ok := Cache[m]
 		if !ok {
 			if len(Delta) < MAX_DELTA_SIZE {
 				// every new metric in deltaManager must have a storage
@@ -113,7 +119,7 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string,
 				DeltaLock.Lock()
 				Delta[m] = storage
 				DeltaLock.Unlock()
-				cache[m] = 1
+				Cache[m] = 1
 			} // MAX_DELTA_SIZE
 		} // if !ok
 	}
