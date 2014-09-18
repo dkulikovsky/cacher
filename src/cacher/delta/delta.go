@@ -36,6 +36,7 @@ func deltaSize(w http.ResponseWriter, r *http.Request) {
 
 func deltaServer(port string, logger *log.Logger) {
 	http.HandleFunc("/delta", deltaHandler)
+	http.HandleFunc("/deltaSize", deltaSize)
 	logger.Printf("Starting delta server on %s port\n", port)
 	err := http.ListenAndServe("0.0.0.0:"+port, nil)
 	if err != nil {
