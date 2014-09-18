@@ -212,6 +212,7 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 	//	log("debug", fmt.Sprintf("MONITOR: %s", out))
 	//    logger.Printf("MONITOR: %s\n", out)
 	send_data(out, sender)
+	runtime.GC()
 }
 
 func startLogger(logf string) *log.Logger {
