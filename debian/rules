@@ -27,7 +27,6 @@ binary-arch: clean
 	dh_strip
 	dh_installinit --no-start
 	dh_install
-	dh_clearvcs
 	dh_compress
 	dh_fixperms
 	dh_installdeb
