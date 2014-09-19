@@ -13,7 +13,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	//	"runtime/pprof"
+	"runtime/debug"
 	"log"
 	"strconv"
 	"strings"
@@ -38,19 +38,13 @@ var (
 )
 
 func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
-	//	peer := printable_addr(local.RemoteAddr())
-	//	log("debug", fmt.Sprintf("got connection from peer %s", peer))
-
-	//parse_chan := make(chan string)
-	//go parse(parse_chan, boss)
-
 	defer local.Close()
 	r := bufio.NewReader(local)
-	// tag for loop to break it properly
 	lines := make(chan string)
 	go line_reader(r, lines)
 	last_rcv := time.Now()
 	ticker := time.Tick(1 * time.Second)
+	// tag for loop to break it properly
 L:
 	for {
 		select {
@@ -223,7 +217,8 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 	//	log("debug", fmt.Sprintf("MONITOR: %s", out))
 	//    logger.Printf("MONITOR: %s\n", out)
 	send_data(out, sender)
-	runtime.GC()
+	//debug.FreeOSMemory()
+	//runtime.GC()
 }
 
 func startLogger(logf string) *log.Logger {
@@ -262,8 +257,21 @@ func startWorkers(config mylib.Config, r *consistent.Consistent, mon *mylib.Mmon
 	return workers
 }
 
+func freemem() {
+	ticker := time.Tick(10 * time.Minute)
+	for {
+		select {
+		case <-ticker:
+			debug.FreeOSMemory()
+		}
+	}
+}
+
 func main() {
 	runtime.GOMAXPROCS(4)
+	debug.SetGCPercent(10)
+	go freemem()
+
 	rand.Seed(time.Now().Unix())
 	// parse config
 	flag.Parse()

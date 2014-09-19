@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"sync"
     "unsafe"
+	"net"
+	"time"
 )
 
 // Delta object for metrics delta
@@ -17,6 +19,11 @@ var DeltaLock sync.Mutex
 var Cache map[string]int
 
 const MAX_DELTA_SIZE = 10000 // limit on delta size
+
+func init() {
+	Cache = make(map[string]int)
+	Delta = make(map[string]string)
+}
 
 func deltaHandler(w http.ResponseWriter, r *http.Request) {
 	DeltaLock.Lock()
@@ -45,16 +52,25 @@ func deltaServer(port string, logger *log.Logger) {
 
 }
 
-func loadCache(senders []mylib.Sender, logger *log.Logger) map[string]int {
+// it is the same function as in mylib, but deadline is set to 10min
+func DialTimeoutLong(network, addr string) (net.Conn, error) {
+	c, err := net.DialTimeout(network, addr, time.Duration(60*time.Second))
+	if err != nil {
+		return c, err
+	}
+	c.SetDeadline(time.Now().Add(time.Duration(600 * time.Second)))
+	return c, err
+}
+
+func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
 	// ugly way to set timeout
 	transport := http.Transport{
-		Dial: mylib.DialTimeout,
+		Dial: DialTimeoutLong,
 	}
 	client := http.Client{
 		Transport: &transport,
 	}
 
-	cache := make(map[string]int)
 	hosts_done := make(map[string]int)
 	for _, w := range senders {
 		_, ok := hosts_done[w.Host]
@@ -83,14 +99,13 @@ func loadCache(senders []mylib.Sender, logger *log.Logger) map[string]int {
 		}
 		logger.Printf("loaded data from %s:%d, cache size now %d\n", w.Host, w.Port, len(cache))
 	}
-	return cache
+	return 
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
-    Delta := make(map[string]string)
 	go deltaServer(deltaPort, logger)
 	logger.Println("loading cache")
-	Cache := loadCache(senders, logger)
+	loadCache(senders, logger, Cache)
 	logger.Printf("loaded %d\n", len(Cache))
 	for {
 		m := <-metrics
