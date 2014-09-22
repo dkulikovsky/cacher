@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.16) unstable; urgency=low
+
+  * fixed GC usage 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Mon, 22 Sep 2014 19:58:29 +0400
+
 graphite-ch-cacher (0.1.15.3.exp) unstable; urgency=low
 
   * moved from newbufferstring to strings.NewReader 
