@@ -1,3 +1,15 @@
+graphite-ch-cacher (0.1.16.2) unstable; urgency=low
+
+  * one more fix on nil map 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 24 Sep 2014 20:01:16 +0400
+
+graphite-ch-cacher (0.1.16.1) unstable; urgency=low
+
+  * fixed nil map exception 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 24 Sep 2014 19:57:14 +0400
+
 graphite-ch-cacher (0.1.16) unstable; urgency=low
 
   * fixed GC usage 
