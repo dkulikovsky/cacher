@@ -23,7 +23,8 @@ const MAX_DELTA_SIZE = 10000 // limit on delta size
 func deltaHandler(w http.ResponseWriter, r *http.Request) {
 	DeltaLock.Lock()
 	delta := Delta
-	Delta = nil
+    // reset Delta map to zero
+	Delta = make(map[string]string)
 	DeltaLock.Unlock()
 	result := ""
 	for k, v := range delta {
@@ -98,8 +99,8 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
-        Delta := make(map[string]string)
-        Cache := make(map[string]int)
+    Delta = make(map[string]string)
+    Cache = make(map[string]int)
 	go deltaServer(deltaPort, logger)
 	logger.Println("loading cache")
 	loadCache(senders, logger, Cache)

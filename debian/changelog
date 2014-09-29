@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.16.3) unstable; urgency=low
+
+  * now i got it, disgusting delta bug 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Mon, 29 Sep 2014 18:54:27 +0400
+
 graphite-ch-cacher (0.1.16.2) unstable; urgency=low
 
   * one more fix on nil map 
