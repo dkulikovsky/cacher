@@ -1,3 +1,10 @@
+graphite-ch-cacher (0.1.17.0) unstable; urgency=low
+
+  * removed bogus string formating in monitor
+  * removed mutexes in favour to channels 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 02 Oct 2014 16:51:14 +0400
+
 graphite-ch-cacher (0.1.16.3) unstable; urgency=low
 
   * now i got it, disgusting delta bug 

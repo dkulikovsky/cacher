@@ -16,20 +16,26 @@ type CacheItem struct {
     storage string
 }
 
-var Delta chan CacheItem
-
 const MAX_DELTA_SIZE = 100000 // limit on delta size
 
-func deltaHandler(w http.ResponseWriter, r *http.Request) {
+func deltaHandler(w http.ResponseWriter, r *http.Request, logger *log.Logger, delta chan CacheItem) {
 	result := ""
-	for v := range Delta {
-		result += fmt.Sprintf("%s %s\n", v.host, v.storage)
+    L:
+	for {
+        select {
+            case item := <- delta:
+                result += fmt.Sprintf("%s %s\n", item.host, item.storage)
+            default:
+                break L
+        }
 	}
 	fmt.Fprintf(w, result)
 }
 
-func deltaServer(port string, logger *log.Logger) {
-	http.HandleFunc("/delta", deltaHandler)
+func deltaServer(port string, logger *log.Logger, delta chan CacheItem) {
+	http.HandleFunc("/delta", func(w http.ResponseWriter, r *http.Request) {
+            deltaHandler(w, r, logger, delta)
+    })
 	logger.Printf("Starting delta server on %s port\n", port)
 	err := http.ListenAndServe("0.0.0.0:"+port, nil)
 	if err != nil {
@@ -88,15 +94,15 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
-    Delta = make(chan CacheItem, 100000)
-    Cache := make(map[string]int)
-	go deltaServer(deltaPort, logger)
+    delta := make(chan CacheItem, 100000)
+    cache := make(map[string]int)
+	go deltaServer(deltaPort, logger, delta)
 	logger.Println("loading cache")
-	loadCache(senders, logger, Cache)
-	logger.Printf("loaded %d\n", len(Cache))
+	loadCache(senders, logger, cache)
+	logger.Printf("loaded %d\n", len(cache))
 	for {
 		m := <-metrics
-		_, ok := Cache[m]
+		_, ok := cache[m]
 		if !ok {
 			// every new metric in deltaManager must have a storage
 			storage := ""
@@ -118,8 +124,8 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string,
 					logger.Println("Failed to get storage for some reason :(")
 				}
 			} // single storage vs multistorage
-            Delta <- CacheItem{m, storage}
-			Cache[m] = 1
+            delta <- CacheItem{m, storage}
+			cache[m] = 1
 		} // if !ok
 	}
 }
