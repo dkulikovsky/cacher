@@ -201,24 +201,25 @@ func monitor(mon *mylib.Mmon, boss mylib.Boss) {
 func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) {
 	ts := time.Now()
     tsF := ts.Format("2006-01-02")
-	out := fmt.Sprintf("('five_sec.int_%s.metrics_send', %d, %d, '%s'),", port, m, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.metrics_rcvd', %d, %d, '%s'),", out, port, r, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.conn', %d, %d, '%s')", out, port, c, ts.Unix(), tsF)
-
     // get memstats
     mem := new(runtime.MemStats)
     runtime.ReadMemStats(mem)
-	out = fmt.Sprintf("%s('five_sec.int_%s.heap_sys', %d, %d, '%s')", out, port, mem.HeapSys, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.heap_idle', %d, %d, '%s')", out, port, mem.HeapIdle, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.heap_inuse', %d, %d, '%s')", out, port, mem.HeapInuse, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.heap_released', %d, %d, '%s')", out, port, mem.HeapReleased, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.alloc', %d, %d, '%s')", out, port, mem.Alloc, ts.Unix(), tsF)
-	out = fmt.Sprintf("%s('five_sec.int_%s.sys', %d, %d, '%s')", out, port, mem.Sys, ts.Unix(), tsF)
-	//	log("debug", fmt.Sprintf("MONITOR: %s", out))
-	//    logger.Printf("MONITOR: %s\n", out)
+    data := map[string]uint64{
+            "metrics_send": uint64(m),
+            "metrics_rcvd": uint64(r),
+            "conn": uint64(c),
+            "heap_sys": mem.HeapSys,
+            "heap_idle": mem.HeapIdle,
+            "heap_inuse": mem.HeapInuse,
+            "alloc": mem.Alloc,
+            "sys": mem.Sys,
+    }
+
+    out := ""
+    for key, val := range data {
+        out += fmt.Sprintf("('five_sec.int_%s.%s', %d, %d, '%s'),", port, key, val, ts.Unix(), tsF)
+    }
 	send_data(out, sender)
-	//debug.FreeOSMemory()
-	//runtime.GC()
 }
 
 func startLogger(logf string) *log.Logger {

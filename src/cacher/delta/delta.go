@@ -7,45 +7,34 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"sync"
-    "unsafe"
 	"net"
 	"time"
 )
 
-// Delta object for metrics delta
-var Delta map[string]string
-var DeltaLock sync.Mutex
-var Cache map[string]int
+type CacheItem struct {
+    host string
+    storage string
+}
 
-const MAX_DELTA_SIZE = 10000 // limit on delta size
+var Delta chan CacheItem
+
+const MAX_DELTA_SIZE = 100000 // limit on delta size
 
 func deltaHandler(w http.ResponseWriter, r *http.Request) {
-	DeltaLock.Lock()
-	delta := Delta
-    // reset Delta map to zero
-	Delta = make(map[string]string)
-	DeltaLock.Unlock()
 	result := ""
-	for k, v := range delta {
-		result += fmt.Sprintf("%s %s\n", k, v)
+	for v := range Delta {
+		result += fmt.Sprintf("%s %s\n", v.host, v.storage)
 	}
 	fmt.Fprintf(w, result)
 }
 
-func deltaSize(w http.ResponseWriter, r *http.Request) {
-    fmt.Fprintf(w, "%d", unsafe.Sizeof(Cache))
-}
-
 func deltaServer(port string, logger *log.Logger) {
 	http.HandleFunc("/delta", deltaHandler)
-	http.HandleFunc("/deltaSize", deltaSize)
 	logger.Printf("Starting delta server on %s port\n", port)
 	err := http.ListenAndServe("0.0.0.0:"+port, nil)
 	if err != nil {
 		logger.Printf("failed to start delta server, err = %v\n", err)
 	}
-
 }
 
 // it is the same function as in mylib, but deadline is set to 10min
@@ -99,8 +88,8 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
-    Delta = make(map[string]string)
-    Cache = make(map[string]int)
+    Delta = make(chan CacheItem, 100000)
+    Cache := make(map[string]int)
 	go deltaServer(deltaPort, logger)
 	logger.Println("loading cache")
 	loadCache(senders, logger, Cache)
@@ -109,32 +98,28 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string,
 		m := <-metrics
 		_, ok := Cache[m]
 		if !ok {
-			if len(Delta) < MAX_DELTA_SIZE {
-				// every new metric in deltaManager must have a storage
-				storage := ""
-				// if there is a single storage everything is easy
-				if boss.Single == 1 {
-					storage = boss.Senders[0].Host
+			// every new metric in deltaManager must have a storage
+			storage := ""
+			// if there is a single storage everything is easy
+			if boss.Single == 1 {
+				storage = boss.Senders[0].Host
+			} else {
+				// but sometimes we can use multiply storage, than it's a hashring task to choose the right one
+				r, err := boss.Ring.GetN(m, boss.Rf)
+				if err != nil {
+					logger.Printf("Failed to get caches for metric %s, err %v\n", m, err)
+					continue
+				}
+				if len(r) > 0 {
+					// daleta manager doesn't inquire about replication and awlays will show the first
+					// storage in the ring, dublication because of replication is handled by main sphinx index - path
+					storage = r[0]
 				} else {
-					// but sometimes we can use multiply storage, than it's a hashring task to choose the right one
-					r, err := boss.Ring.GetN(m, boss.Rf)
-					if err != nil {
-						logger.Printf("Failed to get caches for metric %s, err %v\n", m, err)
-						continue
-					}
-					if len(r) > 0 {
-						// daleta manager doesn't inquire about replication and awlays will show the first
-						// storage in the ring, dublication because of replication is handled by main sphinx index - path
-						storage = r[0]
-					} else {
-						logger.Println("Failed to get storage for some reason :(")
-					}
-				} // single storage vs multistorage
-				DeltaLock.Lock()
-				Delta[m] = storage
-				DeltaLock.Unlock()
-				Cache[m] = 1
-			} // MAX_DELTA_SIZE
+					logger.Println("Failed to get storage for some reason :(")
+				}
+			} // single storage vs multistorage
+            Delta <- CacheItem{m, storage}
+			Cache[m] = 1
 		} // if !ok
 	}
 }
