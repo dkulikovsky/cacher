@@ -12,34 +12,19 @@ import (
 )
 
 type CacheItem struct {
-    host string
+    metric string
     storage string
 }
 
-const MAX_DELTA_SIZE = 100000 // limit on delta size
-
-func deltaHandler(w http.ResponseWriter, r *http.Request, logger *log.Logger, delta chan CacheItem) {
-	result := ""
-    L:
+func deltaSender(logger *log.Logger, delta chan CacheItem) {
 	for {
-        select {
-            case item := <- delta:
-                result += fmt.Sprintf("%s %s\n", item.host, item.storage)
-            default:
-                break L
-        }
-	}
-	fmt.Fprintf(w, result)
-}
-
-func deltaServer(port string, logger *log.Logger, delta chan CacheItem) {
-	http.HandleFunc("/delta", func(w http.ResponseWriter, r *http.Request) {
-            deltaHandler(w, r, logger, delta)
-    })
-	logger.Printf("Starting delta server on %s port\n", port)
-	err := http.ListenAndServe("0.0.0.0:"+port, nil)
-	if err != nil {
-		logger.Printf("failed to start delta server, err = %v\n", err)
+            item := <- delta
+            _, err := http.Get("http://127.0.0.1:7000/add?name="+item.metric)
+            if err != nil {
+                    logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
+            } else {
+                    logger.Printf("DEBUG: added %s", item)
+            }
 	}
 }
 
@@ -96,7 +81,7 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
     delta := make(chan CacheItem, 100000)
     cache := make(map[string]int)
-	go deltaServer(deltaPort, logger, delta)
+	go deltaSender(logger, delta)
 	logger.Println("loading cache")
 	loadCache(senders, logger, cache)
 	logger.Printf("loaded %d\n", len(cache))
