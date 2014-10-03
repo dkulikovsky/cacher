@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.18) unstable; urgency=low
+
+  * moved to mstree search delta updates
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Fri, 03 Oct 2014 18:59:38 +0400
+
 graphite-ch-cacher (0.1.17.0) unstable; urgency=low
 
   * removed bogus string formating in monitor
