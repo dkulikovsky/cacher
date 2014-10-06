@@ -2,13 +2,13 @@ package delta
 
 import (
 	"bufio"
-	"bytes"
 	"cacher/mylib"
-	"fmt"
 	"log"
 	"net/http"
 	"net"
 	"time"
+    "strings"
+    "os"
 )
 
 type CacheItem struct {
@@ -39,43 +39,21 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 }
 
 func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
-	// ugly way to set timeout
-	transport := http.Transport{
-		Dial: DialTimeoutLong,
-	}
-	client := http.Client{
-		Transport: &transport,
-	}
-
-	hosts_done := make(map[string]int)
-	for _, w := range senders {
-		_, ok := hosts_done[w.Host]
-		if ok {
-			continue
-		} else {
-			hosts_done[w.Host] = 1
-		}
-
-		url := fmt.Sprintf("http://%s:%d", w.Host, w.Port)
-		req := fmt.Sprintf("SELECT Distinct(Path) from graphite")
-		resp, err := client.Post(url, "text/xml", bytes.NewBufferString(req))
-		defer resp.Body.Close()
-
-		if err != nil {
-			logger.Printf("failed to load cache from %s, error: %v\n", w.Host, err)
-			continue
-		}
-		body := bufio.NewScanner(resp.Body)
-		for body.Scan() {
-			line := body.Text()
-			cache[line] = 1
-		}
-		if err := body.Err(); err != nil {
-			logger.Printf("failed to parse response from %s:%d, err: %v\n", w.Host, w.Port, err)
-		}
-		logger.Printf("loaded data from %s:%d, cache size now %d\n", w.Host, w.Port, len(cache))
-	}
-	return 
+    // load cache from file
+    file, err := os.Open("/var/tmp/metrics.dat")
+    if err != nil {
+        logger.Printf("failed to open metrics file, no cache loaded, err = %v", err)
+        return 
+    }
+    scanner := bufio.NewScanner(file)
+    for scanner.Scan() {
+        m := strings.TrimSpace(scanner.Text())
+        cache[m] = 1
+    }
+    if err := scanner.Err(); err != nil {
+        logger.Printf("something went wrong while scanning through the index file, err %v", err)
+    }
+    return
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
