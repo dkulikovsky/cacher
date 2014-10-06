@@ -41,6 +41,7 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
     // load cache from file
     file, err := os.Open("/var/tmp/metrics.dat")
+    defer file.Close()
     if err != nil {
         logger.Printf("failed to open metrics file, no cache loaded, err = %v", err)
         return 
