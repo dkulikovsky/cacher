@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.18.1) unstable; urgency=low
+
+  * rebuild with golang 1.3.3 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Mon, 06 Oct 2014 17:38:32 +0400
+
 graphite-ch-cacher (0.1.18) unstable; urgency=low
 
   * moved to mstree search delta updates
