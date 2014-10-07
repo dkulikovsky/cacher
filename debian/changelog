@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.18.3) unstable; urgency=low
+
+  * fixed socket leak in delta 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 07 Oct 2014 17:59:38 +0400
+
 graphite-ch-cacher (0.1.18.2) unstable; urgency=low
 
   * moved to file base indexing on start 

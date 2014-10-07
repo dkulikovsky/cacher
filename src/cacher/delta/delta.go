@@ -19,7 +19,8 @@ type CacheItem struct {
 func deltaSender(logger *log.Logger, delta chan CacheItem) {
 	for {
             item := <- delta
-            _, err := http.Get("http://127.0.0.1:7000/add?name="+item.metric)
+            resp, err := http.Get("http://127.0.0.1:7000/add?name="+item.metric)
+            defer resp.Body.Close()
             if err != nil {
                     logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
             } else {
