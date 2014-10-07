@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.18.4) unstable; urgency=low
+
+  * fixed panic on defer close 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 07 Oct 2014 18:12:27 +0400
+
 graphite-ch-cacher (0.1.18.3) unstable; urgency=low
 
   * fixed socket leak in delta 
