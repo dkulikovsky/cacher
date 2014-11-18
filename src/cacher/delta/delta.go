@@ -42,12 +42,14 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
     // load cache from file
     file, err := os.Open("/var/tmp/metrics.dat")
-    defer file.Close()
+    resp, err := http.Get("http://127.0.0.1:7000/add?name="+item.metric)
     if err != nil {
-        logger.Printf("failed to open metrics file, no cache loaded, err = %v", err)
-        return 
+            logger.Printf("Error: failed to get index from metricsearch, err [ %v ]", err)
+            return
     }
-    scanner := bufio.NewScanner(file)
+    defer resp.Body.Close()
+
+    scanner := bufio.NewScanner(resp.Body)
     for scanner.Scan() {
         m := strings.TrimSpace(scanner.Text())
         cache[m] = 1
