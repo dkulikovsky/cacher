@@ -8,7 +8,6 @@ import (
 	"net"
 	"time"
     "strings"
-    "os"
 )
 
 type CacheItem struct {
@@ -41,8 +40,7 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 
 func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
     // load cache from file
-    file, err := os.Open("/var/tmp/metrics.dat")
-    resp, err := http.Get("http://127.0.0.1:7000/add?name="+item.metric)
+    resp, err := http.Get("http://127.0.0.1:7000/dump")
     if err != nil {
             logger.Printf("Error: failed to get index from metricsearch, err [ %v ]", err)
             return
@@ -55,7 +53,7 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
         cache[m] = 1
     }
     if err := scanner.Err(); err != nil {
-        logger.Printf("something went wrong while scanning through the index file, err %v", err)
+        logger.Printf("something went wrong while scanning through the index, err %v", err)
     }
     return
 }

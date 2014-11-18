@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.19.0) unstable; urgency=low
+
+  * moved to /dump handler for loading metrics 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 18 Nov 2014 21:27:15 +0300
+
 graphite-ch-cacher (0.1.18.4) unstable; urgency=low
 
   * fixed panic on defer close 
