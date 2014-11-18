@@ -318,6 +318,11 @@ func main() {
 	if config.EnableDelta > 0 {
 		logger.Printf("Delta enabled on %s", *deltaPort)
 		go delta.DeltaManager(deltaChan, workers, *deltaPort, boss, logger)
+
+        // FIXIT
+        // deltaPort is legacy option and now used for debugging purposes
+        http.ListenAndServe("localhost:" + *deltaPort, nil)
+        // FIXIT
 	} else {
 		go delta.BogusDelta(deltaChan)
 	}
