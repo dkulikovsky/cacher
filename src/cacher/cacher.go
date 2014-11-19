@@ -321,7 +321,9 @@ func main() {
 
         // FIXIT
         // deltaPort is legacy option and now used for debugging purposes
-        http.ListenAndServe("localhost:" + *deltaPort, nil)
+        go func() {
+            http.ListenAndServe("localhost:" + *deltaPort, nil)
+        }()
         // FIXIT
 	} else {
 		go delta.BogusDelta(deltaChan)
