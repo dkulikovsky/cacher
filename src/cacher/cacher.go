@@ -43,7 +43,7 @@ func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
 	lines := make(chan string)
 	go line_reader(r, lines)
 	last_rcv := time.Now()
-	ticker := time.Tick(1 * time.Second)
+	ticker := time.NewTicker(1 * time.Second)
 	// tag for loop to break it properly
 L:
 	for {
@@ -57,13 +57,14 @@ L:
 			atomic.AddInt32(&mon.Rcv, 1)
 			parse(line, boss)
 			last_rcv = time.Now()
-		case <-ticker:
+		case <-ticker.C:
 			if time.Since(last_rcv).Seconds() > 60 {
 				logger.Println("closing connection after read timeout 60sec")
 				break L
 			}
 		}
 	}
+    ticker.Stop()
 }
 
 func line_reader(r *bufio.Reader, lines chan string) {
@@ -123,23 +124,24 @@ func parse(input string, boss mylib.Boss) {
 
 func sender(sender mylib.Sender, send_mon *int32) {
 	logger.Printf("Started sender with options: [%s:%d instance %d]", sender.Host, sender.Port, sender.Index)
-	var data_buf bytes.Buffer
+	data_buf := make([]string, 0, 500000)
 	var send int32
 	send = 0
 	ticker := time.Tick(1 * time.Second)
 	for {
 		select {
 		case <-ticker:
-			if data_buf.Len() > 0 {
+			if len(data_buf) > 0 {
 				//	log("debug", fmt.Sprintf("sending (t) %d bytes to %s..", data_buf.Len(), sender.host))
-				send_data(data_buf.String(), sender)
+				send_data(strings.Join(data_buf,", "), sender)
 				atomic.AddInt32(send_mon, send)
 				send = 0
 				// reset buffer
-				data_buf.Reset()
+				data_buf = nil
+                data_buf = make([]string, 0, 500000)
 			}
 		case input_buf := <-sender.Pipe:
-			fmt.Fprintf(&data_buf, "%s, ", input_buf)
+			data_buf = append(data_buf, input_buf)
 			send++
 		}
 	}
