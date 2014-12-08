@@ -8,13 +8,13 @@ import (
 	"flag"
 	"fmt"
 	"github.com/stathat/consistent"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
 	"os"
 	"runtime"
 	"runtime/debug"
-	"log"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -64,7 +64,7 @@ L:
 			}
 		}
 	}
-    ticker.Stop()
+	ticker.Stop()
 }
 
 func line_reader(r *bufio.Reader, lines chan string) {
@@ -133,12 +133,12 @@ func sender(sender mylib.Sender, send_mon *int32) {
 		case <-ticker:
 			if len(data_buf) > 0 {
 				//	log("debug", fmt.Sprintf("sending (t) %d bytes to %s..", data_buf.Len(), sender.host))
-				send_data(strings.Join(data_buf,", "), sender)
+				send_data(strings.Join(data_buf, ", "), sender)
 				atomic.AddInt32(send_mon, send)
 				send = 0
 				// reset buffer
 				data_buf = nil
-                data_buf = make([]string, 0, 500000)
+				data_buf = make([]string, 0, 500000)
 			}
 		case input_buf := <-sender.Pipe:
 			data_buf = append(data_buf, input_buf)
@@ -202,25 +202,25 @@ func monitor(mon *mylib.Mmon, boss mylib.Boss) {
 
 func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) {
 	ts := time.Now()
-    tsF := ts.Format("2006-01-02")
-    // get memstats
-    mem := new(runtime.MemStats)
-    runtime.ReadMemStats(mem)
-    data := map[string]uint64{
-            "metrics_send": uint64(m),
-            "metrics_rcvd": uint64(r),
-            "conn": uint64(c),
-            "heap_sys": mem.HeapSys,
-            "heap_idle": mem.HeapIdle,
-            "heap_inuse": mem.HeapInuse,
-            "alloc": mem.Alloc,
-            "sys": mem.Sys,
-    }
+	tsF := ts.Format("2006-01-02")
+	// get memstats
+	mem := new(runtime.MemStats)
+	runtime.ReadMemStats(mem)
+	data := map[string]uint64{
+		"metrics_send": uint64(m),
+		"metrics_rcvd": uint64(r),
+		"conn":         uint64(c),
+		"heap_sys":     mem.HeapSys,
+		"heap_idle":    mem.HeapIdle,
+		"heap_inuse":   mem.HeapInuse,
+		"alloc":        mem.Alloc,
+		"sys":          mem.Sys,
+	}
 
-    out := ""
-    for key, val := range data {
-        out += fmt.Sprintf("('five_sec.int_%s.%s', %d, %d, '%s'),", port, key, val, ts.Unix(), tsF)
-    }
+	out := ""
+	for key, val := range data {
+		out += fmt.Sprintf("('five_sec.int_%s.%s', %d, %d, '%s'),", port, key, val, ts.Unix(), tsF)
+	}
 	send_data(out, sender)
 }
 
@@ -321,12 +321,12 @@ func main() {
 		logger.Printf("Delta enabled on %s", *deltaPort)
 		go delta.DeltaManager(deltaChan, workers, *deltaPort, boss, logger)
 
-        // FIXIT
-        // deltaPort is legacy option and now used for debugging purposes
-        go func() {
-            http.ListenAndServe("localhost:" + *deltaPort, nil)
-        }()
-        // FIXIT
+		// FIXIT
+		// deltaPort is legacy option and now used for debugging purposes
+		go func() {
+			http.ListenAndServe("localhost:"+*deltaPort, nil)
+		}()
+		// FIXIT
 	} else {
 		go delta.BogusDelta(deltaChan)
 	}
