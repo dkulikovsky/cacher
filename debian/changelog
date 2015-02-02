@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.21.0) unstable; urgency=low
+
+  * added new field for dedublication 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Mon, 02 Feb 2015 13:06:26 +0300
+
 graphite-ch-cacher (0.1.20.0) unstable; urgency=low
 
   * fixed memory leaks 

@@ -97,10 +97,11 @@ func parse(input string, boss mylib.Boss) {
 			return
 		}
 		t := time.Unix(ts_int, 0)
+        curr_time := time.Now()
 
 		if boss.Single == 1 {
 			w := singleSender(boss.Senders)
-			w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s')", metric, data, t.Unix(), t.Format("2006-01-02"))
+			w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s', %d)", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())
 		} else {
 			r, err := boss.Ring.GetN(metric, boss.Rf)
 			if err != nil {
@@ -110,7 +111,7 @@ func parse(input string, boss mylib.Boss) {
 
 			for _, item := range r {
 				w := getSender(item, boss.Senders)
-				w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s')", metric, data, t.Unix(), t.Format("2006-01-02"))
+				w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s', %d)", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())
 			}
 		}
 		// send metric to deltaManager
@@ -216,9 +217,10 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 		"sys":          mem.Sys,
 	}
 
+    curr_time := time.Now()
 	out := ""
 	for key, val := range data {
-		out += fmt.Sprintf("('five_sec.int_%s.%s', %d, %d, '%s'),", port, key, val, ts.Unix(), tsF)
+		out += fmt.Sprintf("('five_sec.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, curr_time.Unix())
 	}
 	send_data(out, sender)
 }
