@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"cacher/delta"
 	"cacher/mylib"
 	"flag"
