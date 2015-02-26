@@ -99,6 +99,14 @@ func parse(input string, boss mylib.Boss) {
 		t := time.Unix(ts_int, 0)
         curr_time := time.Now()
 
+        // just check if data is a real float number
+        // but pass to clickhouse as a string to avoid useless convertation
+        _, err = strconv.ParseFloat(data, 32)
+        if err != nil {
+            logger.Printf("Failed to parse data to float")
+            return
+        }
+
 		if boss.Single == 1 {
 			w := singleSender(boss.Senders)
 			w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s', %d)", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())

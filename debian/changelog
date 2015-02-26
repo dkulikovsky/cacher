@@ -1,3 +1,15 @@
+graphite-ch-cacher (0.1.22.0) unstable; urgency=low
+
+  * added format check for data 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 26 Feb 2015 21:15:04 +0300
+
+graphite-ch-cacher (0.1.21.1) unstable; urgency=low
+
+  * rebuild 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 10 Feb 2015 20:25:54 +0300
+
 graphite-ch-cacher (0.1.21.0) unstable; urgency=low
 
   * added new field for dedublication 
