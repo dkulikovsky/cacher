@@ -103,7 +103,7 @@ func parse(input string, boss mylib.Boss) {
         // but pass to clickhouse as a string to avoid useless convertation
         _, err = strconv.ParseFloat(data, 32)
         if err != nil {
-            logger.Printf("Failed to parse data to float")
+            logger.Printf("Failed to parse data to float, bogus string [ %s ]", input)
             return
         }
 

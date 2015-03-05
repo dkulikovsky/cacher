@@ -1,3 +1,15 @@
+graphite-ch-cacher (0.1.22.2) unstable; urgency=low
+
+  * fixed logging for bogus string 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 26 Feb 2015 23:10:39 +0300
+
+graphite-ch-cacher (0.1.22.1) unstable; urgency=low
+
+  * added bogus string to log 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 26 Feb 2015 23:07:47 +0300
+
 graphite-ch-cacher (0.1.22.0) unstable; urgency=low
 
   * added format check for data 
