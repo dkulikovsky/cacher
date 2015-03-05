@@ -198,7 +198,7 @@ func getSender(r string, senders []mylib.Sender) mylib.Sender {
 func monitor(mon *mylib.Mmon, boss mylib.Boss) {
 	// just pick up first sender all the time, kiss
 	sender := boss.Senders[0]
-	ticker := time.Tick(5 * time.Second)
+	ticker := time.Tick(60 * time.Second)
 	for {
 		select {
 		case <-ticker:
@@ -228,7 +228,7 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
     curr_time := time.Now()
 	out := ""
 	for key, val := range data {
-		out += fmt.Sprintf("('five_sec.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, curr_time.Unix())
+		out += fmt.Sprintf("('one_min.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, curr_time.Unix())
 	}
 	send_data(out, sender)
 }

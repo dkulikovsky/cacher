@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.23.0) precise; urgency=low
+
+  * moved to one_min for internal monitoring
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 05 Mar 2015 22:30:31 +0300
+
 graphite-ch-cacher (0.1.22.2) unstable; urgency=low
 
   * fixed logging for bogus string 
