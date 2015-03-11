@@ -230,6 +230,7 @@ func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) 
 	for key, val := range data {
 		out += fmt.Sprintf("('one_min.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, curr_time.Unix())
 	}
+    logger.Printf("DEBUG: monitoring output %s", out)
 	send_data(out, sender)
 }
 
