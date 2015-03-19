@@ -34,6 +34,7 @@ var (
 	deltaPort   *string = flag.String("deltaPort", "9876", "port for delta handler")
 	logFile     *string = flag.String("log", "/var/log/cacher.log", "port for delta handler")
 	logger      *log.Logger
+	con_alive   int64 = 0
 )
 
 func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
@@ -58,12 +59,13 @@ L:
 			last_rcv = time.Now()
 		case <-ticker.C:
 			if time.Since(last_rcv).Seconds() > 60 {
-				logger.Println("closing connection after read timeout 60sec")
+				logger.Printf("closing connection after read timeout 60sec, %s", local.RemoteAddr().String())
 				break L
 			}
 		}
 	}
 	ticker.Stop()
+	atomic.AddInt64(&con_alive, -1)
 }
 
 func line_reader(r *bufio.Reader, lines chan string) {
@@ -97,15 +99,15 @@ func parse(input string, boss mylib.Boss) {
 			return
 		}
 		t := time.Unix(ts_int, 0)
-        curr_time := time.Now()
+		curr_time := time.Now()
 
-        // just check if data is a real float number
-        // but pass to clickhouse as a string to avoid useless convertation
-        _, err = strconv.ParseFloat(data, 32)
-        if err != nil {
-            logger.Printf("Failed to parse data to float, bogus string [ %s ]", input)
-            return
-        }
+		// just check if data is a real float number
+		// but pass to clickhouse as a string to avoid useless convertation
+		_, err = strconv.ParseFloat(data, 32)
+		if err != nil {
+			logger.Printf("Failed to parse data to float, bogus string [ %s ]", input)
+			return
+		}
 
 		if boss.Single == 1 {
 			w := singleSender(boss.Senders)
@@ -198,39 +200,43 @@ func getSender(r string, senders []mylib.Sender) mylib.Sender {
 func monitor(mon *mylib.Mmon, boss mylib.Boss) {
 	// just pick up first sender all the time, kiss
 	sender := boss.Senders[0]
-	ticker := time.Tick(60 * time.Second)
+	ticker := time.Tick(1000 * time.Millisecond)
+	last := time.Now()
 	for {
 		select {
 		case <-ticker:
 			//			log("debug", fmt.Sprintf("sending to %s..", sender.host))
-			send_mon_data(atomic.SwapInt32(&mon.Send, 0), atomic.SwapInt32(&mon.Rcv, 0), atomic.SwapInt32(&mon.Conn, 0), boss.Port, sender)
+			curr_time := time.Now()
+			if curr_time.Unix() > last.Unix() {
+				send_mon_data(atomic.SwapInt32(&mon.Send, 0), atomic.SwapInt32(&mon.Rcv, 0), atomic.SwapInt32(&mon.Conn, 0), boss.Port, curr_time, sender)
+				last = curr_time
+			}
 		}
 	}
 }
 
-func send_mon_data(m int32, r int32, c int32, port string, sender mylib.Sender) {
-	ts := time.Now()
-	tsF := ts.Format("2006-01-02")
+func send_mon_data(m int32, r int32, c int32, port string, ts time.Time, sender mylib.Sender) {
 	// get memstats
 	mem := new(runtime.MemStats)
 	runtime.ReadMemStats(mem)
-	data := map[string]uint64{
-		"metrics_send": uint64(m),
-		"metrics_rcvd": uint64(r),
-		"conn":         uint64(c),
-		"heap_sys":     mem.HeapSys,
-		"heap_idle":    mem.HeapIdle,
-		"heap_inuse":   mem.HeapInuse,
-		"alloc":        mem.Alloc,
-		"sys":          mem.Sys,
+	data := map[string]int64{
+		"metrics_send": int64(m),
+		"metrics_rcvd": int64(r),
+		"conn":         int64(c),
+		"conn_alive":   atomic.LoadInt64(&con_alive),
+		"heap_sys":     int64(mem.HeapSys),
+		"heap_idle":    int64(mem.HeapIdle),
+		"heap_inuse":   int64(mem.HeapInuse),
+		"alloc":        int64(mem.Alloc),
+		"sys":          int64(mem.Sys),
 	}
 
-    curr_time := time.Now()
 	out := ""
+	tsF := ts.Format("2006-01-02")
 	for key, val := range data {
-		out += fmt.Sprintf("('one_min.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, curr_time.Unix())
+		out += fmt.Sprintf("('one_sec.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, ts.Unix())
 	}
-    logger.Printf("DEBUG: monitoring output %s", out)
+	//logger.Printf("DEBUG: monitoring output %s", out)
 	send_data(out, sender)
 }
 
@@ -271,19 +277,19 @@ func startWorkers(config mylib.Config, r *consistent.Consistent, mon *mylib.Mmon
 }
 
 func freemem() {
-	ticker := time.Tick(10 * time.Minute)
+	ticker := time.Tick(1000 * time.Millisecond)
 	for {
 		select {
 		case <-ticker:
-			debug.FreeOSMemory()
+			logger.Println("just checking")
 		}
 	}
 }
 
 func main() {
-	runtime.GOMAXPROCS(4)
-	debug.SetGCPercent(10)
-	go freemem()
+	runtime.GOMAXPROCS(8)
+	debug.SetGCPercent(90)
+	//	go freemem()
 
 	rand.Seed(time.Now().Unix())
 	// parse config
@@ -334,7 +340,7 @@ func main() {
 		// FIXIT
 		// deltaPort is legacy option and now used for debugging purposes
 		go func() {
-			http.ListenAndServe("localhost:"+*deltaPort, nil)
+			http.ListenAndServe(":"+*deltaPort, nil)
 		}()
 		// FIXIT
 	} else {
@@ -358,6 +364,7 @@ func main() {
 			go process_connection(conn, boss, mon)
 			// received new connection
 			atomic.AddInt32(&mon.Conn, 1)
+			atomic.AddInt64(&con_alive, 1)
 		} else {
 			logger.Printf("Failed to accept connection, %v\n", err)
 		}

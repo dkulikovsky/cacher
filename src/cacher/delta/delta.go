@@ -4,27 +4,34 @@ import (
 	"bufio"
 	"cacher/mylib"
 	"log"
-	"net/http"
 	"net"
+	"net/http"
+	"strings"
 	"time"
-    "strings"
 )
 
 type CacheItem struct {
-    metric string
-    storage string
+	metric  string
+	storage string
 }
 
 func deltaSender(logger *log.Logger, delta chan CacheItem) {
 	for {
-            item := <- delta
-            resp, err := http.Get("http://127.0.0.1:7000/add?name="+item.metric)
-            if err != nil {
-                    logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
-            } else {
-                    logger.Printf("DEBUG: added %s", item)
-                    resp.Body.Close()
-            }
+		item := <-delta
+		transport := http.Transport{
+			Dial: mylib.DialTimeout,
+		}
+		client := http.Client{
+			Transport: &transport,
+		}
+
+		resp, err := client.Get("http://127.0.0.1:7000/add?name=" + item.metric)
+		if err != nil {
+			logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
+		} else {
+			logger.Printf("DEBUG: added %s", item)
+			resp.Body.Close()
+		}
 	}
 }
 
@@ -39,28 +46,28 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 }
 
 func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
-    // load cache from file
-    resp, err := http.Get("http://127.0.0.1:7000/dump")
-    if err != nil {
-            logger.Printf("Error: failed to get index from metricsearch, err [ %v ]", err)
-            return
-    }
-    defer resp.Body.Close()
+	// load cache from file
+	resp, err := http.Get("http://127.0.0.1:7000/dump")
+	if err != nil {
+		logger.Printf("Error: failed to get index from metricsearch, err [ %v ]", err)
+		return
+	}
+	defer resp.Body.Close()
 
-    scanner := bufio.NewScanner(resp.Body)
-    for scanner.Scan() {
-        m := strings.TrimSpace(scanner.Text())
-        cache[m] = 1
-    }
-    if err := scanner.Err(); err != nil {
-        logger.Printf("something went wrong while scanning through the index, err %v", err)
-    }
-    return
+	scanner := bufio.NewScanner(resp.Body)
+	for scanner.Scan() {
+		m := strings.TrimSpace(scanner.Text())
+		cache[m] = 1
+	}
+	if err := scanner.Err(); err != nil {
+		logger.Printf("something went wrong while scanning through the index, err %v", err)
+	}
+	return
 }
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
-    delta := make(chan CacheItem, 100000)
-    cache := make(map[string]int)
+	delta := make(chan CacheItem, 100000)
+	cache := make(map[string]int)
 	go deltaSender(logger, delta)
 	logger.Println("loading cache")
 	loadCache(senders, logger, cache)
@@ -89,7 +96,7 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string,
 					logger.Println("Failed to get storage for some reason :(")
 				}
 			} // single storage vs multistorage
-            delta <- CacheItem{m, storage}
+			delta <- CacheItem{m, storage}
 			cache[m] = 1
 		} // if !ok
 	}
