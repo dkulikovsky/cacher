@@ -287,7 +287,7 @@ func freemem() {
 }
 
 func main() {
-	runtime.GOMAXPROCS(8)
+	runtime.GOMAXPROCS(4)
 	debug.SetGCPercent(90)
 	//	go freemem()
 

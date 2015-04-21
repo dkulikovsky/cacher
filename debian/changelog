@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.24.0) unstable; urgency=low
+
+  * reduced memory consumption in delta 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 19 Mar 2015 16:20:39 +0300
+
 graphite-ch-cacher (0.1.23.0) precise; urgency=low
 
   * moved to one_min for internal monitoring

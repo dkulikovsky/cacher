@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
+xxh "bitbucket.org/StephaneBunel/xxhash-go"
 )
 
 type CacheItem struct {
@@ -45,7 +46,7 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 	return c, err
 }
 
-func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int) {
+func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[uint32]int) {
 	// load cache from file
 	resp, err := http.Get("http://127.0.0.1:7000/dump")
 	if err != nil {
@@ -57,7 +58,8 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		m := strings.TrimSpace(scanner.Text())
-		cache[m] = 1
+        mhash := xxh.Checksum32([]byte(m))
+		cache[mhash] = 1
 	}
 	if err := scanner.Err(); err != nil {
 		logger.Printf("something went wrong while scanning through the index, err %v", err)
@@ -67,14 +69,15 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[string]int)
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
 	delta := make(chan CacheItem, 100000)
-	cache := make(map[string]int)
+	cache := make(map[uint32]int)
 	go deltaSender(logger, delta)
 	logger.Println("loading cache")
 	loadCache(senders, logger, cache)
 	logger.Printf("loaded %d\n", len(cache))
 	for {
 		m := <-metrics
-		_, ok := cache[m]
+        mhash := xxh.Checksum32([]byte(m))
+		_, ok := cache[mhash]
 		if !ok {
 			// every new metric in deltaManager must have a storage
 			storage := ""
@@ -97,7 +100,7 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string,
 				}
 			} // single storage vs multistorage
 			delta <- CacheItem{m, storage}
-			cache[m] = 1
+			cache[mhash] = 1
 		} // if !ok
 	}
 }
