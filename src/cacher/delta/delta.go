@@ -58,6 +58,9 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[uint32]int)
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		m := strings.TrimSpace(scanner.Text())
+        if m == "" {
+                continue
+        }
         mhash := xxh.Checksum32([]byte(m))
 		cache[mhash] = 1
 	}
