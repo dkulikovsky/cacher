@@ -1,0 +1,6 @@
+xxHash-go is mainly written and maintained by Stéphane Bunel.
+
+Patches, Bug Reports and Suggestions
+------------------------------------
+Rémy Oudompheng (Suggested me to provide an implementation of Hash.hash interface)
+Vovchik (vova616) Pure Go implementation of wwhash32 (https://github.com/vova616/xxhash)

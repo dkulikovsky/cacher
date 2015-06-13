@@ -1,0 +1,13 @@
+data/.godocdown.md.i
+data/puregoxxhash32.go.i
+data/AUTHORS.i
+data/xxHash.go.i
+data/xxhash32_test.go.i
+data/xxHash_test.go.i
+data/xxh32sum/main.go.i
+data/xxhash32.go.i
+data/.hgignore.i
+data/C/xxhash.c.i
+data/CHANGELOG.md.i
+data/Makefile.i
+data/README.md.i
