@@ -1,3 +1,15 @@
+graphite-ch-cacher (0.1.26.2) unstable; urgency=low
+
+  * fixed multi_cacher script
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 25 Jun 2015 22:52:10 +0300
+
+graphite-ch-cacher (0.1.26.1) unstable; urgency=low
+
+  * fixed delta link 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 25 Jun 2015 22:44:15 +0300
+
 graphite-ch-cacher (0.1.26.0) unstable; urgency=low
 
   * added option for metricSearch host 
