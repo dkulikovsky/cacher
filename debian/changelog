@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.26.0) unstable; urgency=low
+
+  * added option for metricSearch host 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 25 Jun 2015 22:31:22 +0300
+
 graphite-ch-cacher (0.1.25.0) unstable; urgency=low
 
   * moved to crc32 hash for delta
