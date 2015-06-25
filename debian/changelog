@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.25.0) unstable; urgency=low
+
+  * moved to crc32 hash for delta
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 25 Jun 2015 14:29:59 +0300
+
 graphite-ch-cacher (0.1.24.1) unstable; urgency=low
 
   * fixed empty index bug 

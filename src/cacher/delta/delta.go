@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-xxh "bitbucket.org/StephaneBunel/xxhash-go"
+    "hash/crc32"
 )
 
 type CacheItem struct {
@@ -61,7 +61,7 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[uint32]int)
         if m == "" {
                 continue
         }
-        mhash := xxh.Checksum32([]byte(m))
+        mhash := crc32.ChecksumIEEE([]byte(m))
 		cache[mhash] = 1
 	}
 	if err := scanner.Err(); err != nil {
@@ -79,7 +79,7 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string,
 	logger.Printf("loaded %d\n", len(cache))
 	for {
 		m := <-metrics
-        mhash := xxh.Checksum32([]byte(m))
+        mhash := crc32.ChecksumIEEE([]byte(m))
 		_, ok := cache[mhash]
 		if !ok {
 			// every new metric in deltaManager must have a storage
