@@ -46,7 +46,7 @@ if not isdir("/var/log/cacher"):
 
 # start instances
 pids = []
-for i in xrange(0, conf["instances"]):
+for i in xrange(0, int(conf["instances"])):
     print "Starting %d instance" % i
     pid = subprocess.Popen(["/usr/bin/cacher", "-config", "/etc/cacher/config.ini", "-log",\
                  "/var/log/cacher/cacher_log_%d.log" % (conf["port"]+i),\
