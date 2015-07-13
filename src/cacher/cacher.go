@@ -168,12 +168,20 @@ func send_data(data string, c mylib.Sender) {
 	}
 
 	url := fmt.Sprintf("http://%s:%d", c.Host, c.Port)
-	resp, err := client.Post(url, "text/xml", req)
-	if err != nil {
-		logger.Printf("Something went wrong %v", err)
-		return
-	}
-	defer resp.Body.Close()
+
+    for retry := 0; retry < 4; retry++ {
+		resp, err := client.Post(url, "text/xml", req)
+	    defer resp.Body.Close()
+		if err != nil {
+	        logger.Printf("Failed to send data to %s:%d, error: %v", c.Host, c.Port, err)
+            continue
+		}
+        if resp.StatusCode != 200 {
+            logger.Printf("Got not 200 response status for %s:%d, status: %s", c.Host, c.Port, resp.Status)
+            continue
+        }
+        break
+    }
 	//	status := resp.StatusCode
 	//    log("debug", fmt.Sprintf("executer insert, status %d, host %s:%d:%d, len %d", status, c.host,c.port,c.index, len(data)))
 }

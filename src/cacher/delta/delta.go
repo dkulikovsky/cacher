@@ -26,14 +26,21 @@ func deltaSender(logger *log.Logger, delta chan CacheItem) {
 			Transport: &transport,
 		}
 
-		resp, err := client.Get("http://127.0.0.1:7000/add?name=" + item.metric)
-		if err != nil {
-			logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
-		} else {
-			logger.Printf("DEBUG: added %s", item)
-			resp.Body.Close()
-		}
-	}
+        for retry := 0; retry < 4; retry++ {
+			resp, err := client.Get("http://127.0.0.1:7000/add?name=" + item.metric)
+			defer resp.Body.Close()
+			if err != nil {
+				logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
+                continue
+			}
+            if resp.StatusCode != 200 {
+                logger.Printf("Error: failed to add metric %s, err [ %v ], retry %d", item, err, retry)
+                continue
+            }
+            logger.Printf("Debug: added metric %s", item)
+            break
+        }
+    }
 }
 
 // it is the same function as in mylib, but deadline is set to 10min
