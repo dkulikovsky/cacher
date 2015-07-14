@@ -28,7 +28,6 @@ func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) 
 
         for retry := 0; retry < 4; retry++ {
 		    resp, err := client.Get("http://"+metricSearch+":7000/add?name=" + item.metric)
-			defer resp.Body.Close()
 			if err != nil {
 				logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
                 continue
@@ -38,6 +37,7 @@ func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) 
                 continue
             }
             logger.Printf("Debug: added metric %s", item)
+			resp.Body.Close()
             break
         }
     }

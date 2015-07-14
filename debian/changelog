@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.27.1) unstable; urgency=low
+
+  * fixed null pointer bug in delta 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 14 Jul 2015 18:33:34 +0300
+
 graphite-ch-cacher (0.1.27) unstable; urgency=low
 
   * added option for custom metricsearch 

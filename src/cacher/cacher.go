@@ -171,7 +171,6 @@ func send_data(data string, c mylib.Sender) {
 
     for retry := 0; retry < 4; retry++ {
 		resp, err := client.Post(url, "text/xml", req)
-	    defer resp.Body.Close()
 		if err != nil {
 	        logger.Printf("Failed to send data to %s:%d, error: %v", c.Host, c.Port, err)
             continue
@@ -180,6 +179,7 @@ func send_data(data string, c mylib.Sender) {
             logger.Printf("Got not 200 response status for %s:%d, status: %s", c.Host, c.Port, resp.Status)
             continue
         }
+	    resp.Body.Close()
         break
     }
 	//	status := resp.StatusCode
