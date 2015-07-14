@@ -16,7 +16,7 @@ type CacheItem struct {
 	storage string
 }
 
-func deltaSender(logger *log.Logger, delta chan CacheItem) {
+func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) {
 	for {
 		item := <-delta
 		transport := http.Transport{
@@ -27,7 +27,7 @@ func deltaSender(logger *log.Logger, delta chan CacheItem) {
 		}
 
         for retry := 0; retry < 4; retry++ {
-			resp, err := client.Get("http://127.0.0.1:7000/add?name=" + item.metric)
+		    resp, err := client.Get("http://"+metricSearch+":7000/add?name=" + item.metric)
 			defer resp.Body.Close()
 			if err != nil {
 				logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
@@ -53,9 +53,9 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 	return c, err
 }
 
-func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[uint32]int) {
+func loadCache(metricSearch string, senders []mylib.Sender, logger *log.Logger, cache map[uint32]int) {
 	// load cache from file
-	resp, err := http.Get("http://127.0.0.1:7000/dump")
+	resp, err := http.Get("http://"+metricSearch+":7000/dump")
 	if err != nil {
 		logger.Printf("Error: failed to get index from metricsearch, err [ %v ]", err)
 		return
@@ -77,12 +77,12 @@ func loadCache(senders []mylib.Sender, logger *log.Logger, cache map[uint32]int)
 	return
 }
 
-func DeltaManager(metrics chan string, senders []mylib.Sender, deltaPort string, boss mylib.Boss, logger *log.Logger) {
+func DeltaManager(metrics chan string, senders []mylib.Sender, metricSearch string, boss mylib.Boss, logger *log.Logger) {
 	delta := make(chan CacheItem, 100000)
 	cache := make(map[uint32]int)
-	go deltaSender(logger, delta)
+	go deltaSender(metricSearch, logger, delta)
 	logger.Println("loading cache")
-	loadCache(senders, logger, cache)
+	loadCache(metricSearch, senders, logger, cache)
 	logger.Printf("loaded %d\n", len(cache))
 	for {
 		m := <-metrics

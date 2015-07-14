@@ -31,7 +31,7 @@ var (
 	listen_port string  = "8765"
 	confFile    *string = flag.String("config", "config.ini", "config file")
 	listenPort  *string = flag.String("port", "8765", "listen port for incoming data")
-	deltaPort   *string = flag.String("deltaPort", "9876", "port for delta handler")
+	metricSearch   *string = flag.String("metricSearch", "9876", "port for delta handler")
 	logFile     *string = flag.String("log", "/var/log/cacher.log", "port for delta handler")
 	logger      *log.Logger
 	con_alive   int64 = 0
@@ -303,7 +303,7 @@ func main() {
 	// parse config
 	flag.Parse()
 	if flag.NFlag() != 4 {
-		fmt.Printf("usage: cacher -config config_file -log log_file -port listen_port -deltaPort delta_port\n")
+		fmt.Printf("usage: cacher -config config_file -log log_file -port listen_port -metricSearch metric_search_host\n")
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
@@ -342,15 +342,10 @@ func main() {
 	}
 	// start delta manager
 	if config.EnableDelta > 0 {
-		logger.Printf("Delta enabled on %s", *deltaPort)
-		go delta.DeltaManager(deltaChan, workers, *deltaPort, boss, logger)
-
-		// FIXIT
-		// deltaPort is legacy option and now used for debugging purposes
+		go delta.DeltaManager(deltaChan, workers, *metricSearch, boss, logger)
 		go func() {
-			http.ListenAndServe(":"+*deltaPort, nil)
+			http.ListenAndServe(":5"+*listenPort, nil)
 		}()
-		// FIXIT
 	} else {
 		go delta.BogusDelta(deltaChan)
 	}

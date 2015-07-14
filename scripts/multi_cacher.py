@@ -25,16 +25,20 @@ except Exception, e:
 
 # read config file
 conf = {}
-opt_re = re.compile("^\s*(\w+)\s*=\s*(\d+)\s*$")
+opt_re = re.compile("^\s*(\w+)\s*=\s*(\S+)\s*$")
 for line in mc.readlines():
 	m = opt_re.match(line)
 	if m:
-		conf[string.lower(m.group(1))] = int(m.group(2))
+		conf[string.lower(m.group(1))] = m.group(2)
 
-for item in ["port", "deltaport", "instances"]:
+for item in ["port", "instances"]:
 	if not conf.has_key(item):
 		print "%s is not defined in multiconf" % item
 		sys.exit(1)
+# set defaults
+conf['port'] = int(conf['port'])
+if not conf.has_key("metricsearch"):
+    conf["metricsearch"] = "127.0.0.1"
 
 # check if log dir exists
 if not isdir("/var/log/cacher"):
@@ -42,12 +46,12 @@ if not isdir("/var/log/cacher"):
 
 # start instances
 pids = []
-for i in xrange(0, conf["instances"]):
+for i in xrange(0, int(conf["instances"])):
     print "Starting %d instance" % i
     pid = subprocess.Popen(["/usr/bin/cacher", "-config", "/etc/cacher/config.ini", "-log",\
                  "/var/log/cacher/cacher_log_%d.log" % (conf["port"]+i),\
                  "-port",  str(conf["port"]+i),\
-                 "-deltaPort",  str(conf["deltaport"]+i)],\
+                 "-metricSearch",  conf["metricsearch"]],\
                  stderr = sys.stderr).pid
     pids.append(pid)
 
