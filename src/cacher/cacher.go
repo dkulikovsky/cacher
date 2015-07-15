@@ -169,14 +169,16 @@ func send_data(data string, c mylib.Sender) {
 
 	url := fmt.Sprintf("http://%s:%d", c.Host, c.Port)
 
-    for retry := 0; retry < 4; retry++ {
+    for retry := 0; retry < 3; retry++ {
 		resp, err := client.Post(url, "text/xml", req)
 		if err != nil {
-	        logger.Printf("Failed to send data to %s:%d, error: %v", c.Host, c.Port, err)
+	        logger.Printf("Failed to send data to %s:%d, retries left %d, going to sleep for 100ms, error: %v", c.Host, c.Port, retry, err)
+            time.Sleep(1000*time.Millisecond)
             continue
 		}
         if resp.StatusCode != 200 {
-            logger.Printf("Got not 200 response status for %s:%d, status: %s", c.Host, c.Port, resp.Status)
+            logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 100ms, status: %s", c.Host, c.Port, retry, resp.Status)
+            time.Sleep(1000*time.Millisecond)
             continue
         }
 	    resp.Body.Close()
@@ -216,14 +218,14 @@ func monitor(mon *mylib.Mmon, boss mylib.Boss) {
 			//			log("debug", fmt.Sprintf("sending to %s..", sender.host))
 			curr_time := time.Now()
 			if curr_time.Unix() > last.Unix() {
-				send_mon_data(atomic.SwapInt32(&mon.Send, 0), atomic.SwapInt32(&mon.Rcv, 0), atomic.SwapInt32(&mon.Conn, 0), boss.Port, curr_time, sender)
+				send_mon_data(atomic.SwapInt32(&mon.Send, 0), atomic.SwapInt32(&mon.Rcv, 0), atomic.SwapInt32(&mon.Conn, 0), boss, curr_time, sender)
 				last = curr_time
 			}
 		}
 	}
 }
 
-func send_mon_data(m int32, r int32, c int32, port string, ts time.Time, sender mylib.Sender) {
+func send_mon_data(m int32, r int32, c int32, boss mylib.Boss, ts time.Time, sender mylib.Sender) {
 	// get memstats
 	mem := new(runtime.MemStats)
 	runtime.ReadMemStats(mem)
@@ -242,7 +244,10 @@ func send_mon_data(m int32, r int32, c int32, port string, ts time.Time, sender 
 	out := ""
 	tsF := ts.Format("2006-01-02")
 	for key, val := range data {
-		out += fmt.Sprintf("('one_sec.int_%s.%s', %d, %d, '%s', %d),", port, key, val, ts.Unix(), tsF, ts.Unix())
+        metric_name := fmt.Sprintf("one_sec.int_%s.%s", boss.Port, key)
+		out += fmt.Sprintf("('%s', %d, %d, '%s', %d),", metric_name, val, ts.Unix(), tsF, ts.Unix())
+        // all monitor metrics must exist in metricsearch index
+        boss.DeltaChan <- metric_name
 	}
 	//logger.Printf("DEBUG: monitoring output %s", out)
 	send_data(out, sender)

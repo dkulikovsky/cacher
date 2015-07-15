@@ -26,14 +26,14 @@ func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) 
 			Transport: &transport,
 		}
 
-        for retry := 0; retry < 4; retry++ {
+        for retry := 0; retry < 3; retry++ {
 		    resp, err := client.Get("http://"+metricSearch+":7000/add?name=" + item.metric)
 			if err != nil {
-				logger.Printf("Error: failed to add metric %s, err [ %v ]", item, err)
+				logger.Printf("Error: failed to add metric %s, retries left %d,  err [ %v ]", item, retry,  err)
                 continue
 			}
             if resp.StatusCode != 200 {
-                logger.Printf("Error: failed to add metric %s, err [ %v ], retry %d", item, err, retry)
+                logger.Printf("Error: failed to add metric %s, retries left %d, err [ %v ]", item, retry,  err)
                 continue
             }
             logger.Printf("Debug: added metric %s", item)
