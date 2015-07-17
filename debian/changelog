@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.28) unstable; urgency=low
+
+  * now monitor will send it's own metrics through delta 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 15 Jul 2015 19:29:06 +0300
+
 graphite-ch-cacher (0.1.27.1) unstable; urgency=low
 
   * fixed null pointer bug in delta 
