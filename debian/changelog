@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.29) unstable; urgency=low
+
+  * moved to siphash 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 26 Aug 2015 15:27:29 +0300
+
 graphite-ch-cacher (0.1.28) unstable; urgency=low
 
   * now monitor will send it's own metrics through delta 
