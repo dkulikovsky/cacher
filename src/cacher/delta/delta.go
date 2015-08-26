@@ -8,13 +8,17 @@ import (
 	"net/http"
 	"strings"
 	"time"
-    "hash/crc32"
+    "stablelib.com/v1/crypto/siphash"
 )
 
 type CacheItem struct {
 	metric  string
 	storage string
 }
+
+var (
+        key0, key1 uint64
+)
 
 func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) {
 	for {
@@ -53,7 +57,7 @@ func DialTimeoutLong(network, addr string) (net.Conn, error) {
 	return c, err
 }
 
-func loadCache(metricSearch string, senders []mylib.Sender, logger *log.Logger, cache map[uint32]int) {
+func loadCache(metricSearch string, senders []mylib.Sender, logger *log.Logger, cache map[uint64]int) {
 	// load cache from file
 	resp, err := http.Get("http://"+metricSearch+":7000/dump")
 	if err != nil {
@@ -68,7 +72,7 @@ func loadCache(metricSearch string, senders []mylib.Sender, logger *log.Logger, 
         if m == "" {
                 continue
         }
-        mhash := crc32.ChecksumIEEE([]byte(m))
+        mhash := siphash.Hash(key0, key1, []byte(m))
 		cache[mhash] = 1
 	}
 	if err := scanner.Err(); err != nil {
@@ -79,14 +83,14 @@ func loadCache(metricSearch string, senders []mylib.Sender, logger *log.Logger, 
 
 func DeltaManager(metrics chan string, senders []mylib.Sender, metricSearch string, boss mylib.Boss, logger *log.Logger) {
 	delta := make(chan CacheItem, 100000)
-	cache := make(map[uint32]int)
+	cache := make(map[uint64]int)
 	go deltaSender(metricSearch, logger, delta)
 	logger.Println("loading cache")
 	loadCache(metricSearch, senders, logger, cache)
 	logger.Printf("loaded %d\n", len(cache))
 	for {
 		m := <-metrics
-        mhash := crc32.ChecksumIEEE([]byte(m))
+        mhash := siphash.Hash(key0, key1, []byte(m))
 		_, ok := cache[mhash]
 		if !ok {
 			// every new metric in deltaManager must have a storage
