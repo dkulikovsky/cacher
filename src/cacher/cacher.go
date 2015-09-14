@@ -137,7 +137,7 @@ func sender(sender mylib.Sender, send_mon *int32) {
 	data_buf := make([]string, 0, 500000)
 	var send int32
 	send = 0
-	ticker := time.Tick(1 * time.Second)
+	ticker := time.Tick(5 * time.Second)
 	for {
 		select {
 		case <-ticker:
@@ -158,7 +158,6 @@ func sender(sender mylib.Sender, send_mon *int32) {
 }
 
 func send_data(data string, c mylib.Sender) {
-	req := strings.NewReader(fmt.Sprintf("INSERT INTO default.graphite VALUES %s", data))
 	// an ugly hack to handle conn and write timeouts
 	transport := http.Transport{
 		Dial: mylib.DialTimeout,
@@ -170,14 +169,15 @@ func send_data(data string, c mylib.Sender) {
 	url := fmt.Sprintf("http://%s:%d", c.Host, c.Port)
 
     for retry := 0; retry < 3; retry++ {
+	    req := strings.NewReader(fmt.Sprintf("INSERT INTO default.graphite VALUES %s", data))
 		resp, err := client.Post(url, "text/xml", req)
 		if err != nil {
-	        logger.Printf("Failed to send data to %s:%d, retries left %d, going to sleep for 100ms, error: %v", c.Host, c.Port, retry, err)
+	        logger.Printf("Failed to send data to %s:%d, retries left %d, going to sleep for 1s, error: %v", c.Host, c.Port, retry, err)
             time.Sleep(1000*time.Millisecond)
             continue
 		}
         if resp.StatusCode != 200 {
-            logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 100ms, status: %s", c.Host, c.Port, retry, resp.Status)
+            logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 1s, status: %s", c.Host, c.Port, retry, resp.Status)
             time.Sleep(1000*time.Millisecond)
             continue
         }

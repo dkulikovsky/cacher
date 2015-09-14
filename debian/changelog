@@ -1,3 +1,15 @@
+graphite-ch-cacher (0.1.29.2) unstable; urgency=low
+
+  * fixed resend  
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 27 Aug 2015 21:51:55 +0300
+
+graphite-ch-cacher (0.1.29.1) unstable; urgency=low
+
+  * raised time step for sender threads to 5s 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Thu, 27 Aug 2015 21:11:27 +0300
+
 graphite-ch-cacher (0.1.29) unstable; urgency=low
 
   * moved to siphash 
