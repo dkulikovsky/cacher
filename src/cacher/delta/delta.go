@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"time"
-    "stablelib.com/v1/crypto/siphash"
+	"stablelib.com/v1/crypto/siphash"
 )
 
 type CacheItem struct {
@@ -17,7 +17,7 @@ type CacheItem struct {
 }
 
 var (
-        key0, key1 uint64
+	key0, key1 uint64
 )
 
 func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) {
@@ -30,21 +30,21 @@ func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) 
 			Transport: &transport,
 		}
 
-        for retry := 0; retry < 3; retry++ {
-		    resp, err := client.Get("http://"+metricSearch+":7000/add?name=" + item.metric)
+		for retry := 0; retry < 3; retry++ {
+			resp, err := client.Get("http://"+metricSearch+":7000/add?name=" + item.metric)
 			if err != nil {
 				logger.Printf("Error: failed to add metric %s, retries left %d,  err [ %v ]", item, retry,  err)
-                continue
+				continue
 			}
-            if resp.StatusCode != 200 {
-                logger.Printf("Error: failed to add metric %s, retries left %d, err [ %v ]", item, retry,  err)
-                continue
-            }
-            logger.Printf("Debug: added metric %s", item)
 			resp.Body.Close()
-            break
-        }
-    }
+			if resp.StatusCode != 200 {
+				logger.Printf("Error: failed to add metric %s, retries left %d, err [ %v ]", item, retry,  err)
+				continue
+			}
+			logger.Printf("Debug: added metric %s", item)
+			break
+		}
+	}
 }
 
 // it is the same function as in mylib, but deadline is set to 10min
@@ -69,10 +69,10 @@ func loadCache(metricSearch string, senders []mylib.Sender, logger *log.Logger, 
 	scanner := bufio.NewScanner(resp.Body)
 	for scanner.Scan() {
 		m := strings.TrimSpace(scanner.Text())
-        if m == "" {
-                continue
-        }
-        mhash := siphash.Hash(key0, key1, []byte(m))
+		if m == "" {
+			continue
+		}
+		mhash := siphash.Hash(key0, key1, []byte(m))
 		cache[mhash] = 1
 	}
 	if err := scanner.Err(); err != nil {
@@ -90,7 +90,7 @@ func DeltaManager(metrics chan string, senders []mylib.Sender, metricSearch stri
 	logger.Printf("loaded %d\n", len(cache))
 	for {
 		m := <-metrics
-        mhash := siphash.Hash(key0, key1, []byte(m))
+		mhash := siphash.Hash(key0, key1, []byte(m))
 		_, ok := cache[mhash]
 		if !ok {
 			// every new metric in deltaManager must have a storage
