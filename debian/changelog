@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.30) unstable; urgency=low
+
+  * fixed connection leak on http requests to metricsearch and clickhouse
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 24 Nov 2015 19:30:56 +0300
+
 graphite-ch-cacher (0.1.29.2) unstable; urgency=low
 
   * fixed resend  
