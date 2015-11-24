@@ -168,22 +168,22 @@ func send_data(data string, c mylib.Sender) {
 
 	url := fmt.Sprintf("http://%s:%d", c.Host, c.Port)
 
-    for retry := 0; retry < 3; retry++ {
-	    req := strings.NewReader(fmt.Sprintf("INSERT INTO default.graphite VALUES %s", data))
+	for retry := 0; retry < 3; retry++ {
+		req := strings.NewReader(fmt.Sprintf("INSERT INTO default.graphite VALUES %s", data))
 		resp, err := client.Post(url, "text/xml", req)
 		if err != nil {
-	        logger.Printf("Failed to send data to %s:%d, retries left %d, going to sleep for 1s, error: %v", c.Host, c.Port, retry, err)
-            time.Sleep(1000*time.Millisecond)
-            continue
+			logger.Printf("Failed to send data to %s:%d, retries left %d, going to sleep for 1s, error: %v", c.Host, c.Port, retry, err)
+			time.Sleep(1000*time.Millisecond)
+			continue
 		}
-        if resp.StatusCode != 200 {
-            logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 1s, status: %s", c.Host, c.Port, retry, resp.Status)
-            time.Sleep(1000*time.Millisecond)
-            continue
-        }
-	    resp.Body.Close()
-        break
-    }
+		if resp.StatusCode != 200 {
+			logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 1s, status: %s", c.Host, c.Port, retry, resp.Status)
+			time.Sleep(1000*time.Millisecond)
+			continue
+		}
+		resp.Body.Close()
+		break
+	}
 	//	status := resp.StatusCode
 	//    log("debug", fmt.Sprintf("executer insert, status %d, host %s:%d:%d, len %d", status, c.host,c.port,c.index, len(data)))
 }
@@ -244,10 +244,10 @@ func send_mon_data(m int32, r int32, c int32, boss mylib.Boss, ts time.Time, sen
 	out := ""
 	tsF := ts.Format("2006-01-02")
 	for key, val := range data {
-        metric_name := fmt.Sprintf("one_sec.int_%s.%s", boss.Port, key)
+		metric_name := fmt.Sprintf("one_sec.int_%s.%s", boss.Port, key)
 		out += fmt.Sprintf("('%s', %d, %d, '%s', %d),", metric_name, val, ts.Unix(), tsF, ts.Unix())
-        // all monitor metrics must exist in metricsearch index
-        boss.DeltaChan <- metric_name
+		// all monitor metrics must exist in metricsearch index
+		boss.DeltaChan <- metric_name
 	}
 	//logger.Printf("DEBUG: monitoring output %s", out)
 	send_data(out, sender)
