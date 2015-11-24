@@ -36,12 +36,12 @@ func deltaSender(metricSearch string, logger *log.Logger, delta chan CacheItem) 
 				logger.Printf("Error: failed to add metric %s, retries left %d,  err [ %v ]", item, retry,  err)
 				continue
 			}
+			resp.Body.Close()
 			if resp.StatusCode != 200 {
 				logger.Printf("Error: failed to add metric %s, retries left %d, err [ %v ]", item, retry,  err)
 				continue
 			}
 			logger.Printf("Debug: added metric %s", item)
-			resp.Body.Close()
 			break
 		}
 	}

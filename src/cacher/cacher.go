@@ -176,12 +176,12 @@ func send_data(data string, c mylib.Sender) {
 			time.Sleep(1000*time.Millisecond)
 			continue
 		}
+		resp.Body.Close()
 		if resp.StatusCode != 200 {
 			logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 1s, status: %s", c.Host, c.Port, retry, resp.Status)
 			time.Sleep(1000*time.Millisecond)
 			continue
 		}
-		resp.Body.Close()
 		break
 	}
 	//	status := resp.StatusCode
