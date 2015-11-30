@@ -39,45 +39,20 @@ var (
 
 func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
 	defer local.Close()
-	r := bufio.NewReader(local)
-	lines := make(chan string)
-	go line_reader(r, lines)
-	last_rcv := time.Now()
-	ticker := time.NewTicker(1 * time.Second)
-	// tag for loop to break it properly
-L:
-	for {
-		select {
-		case line := <-lines:
-			//            line := <-lines
-			if line == "__end_of_data__" {
-				break L
-			}
-			// process data
-			atomic.AddInt32(&mon.Rcv, 1)
-			parse(line, boss)
-			last_rcv = time.Now()
-		case <-ticker.C:
-			if time.Since(last_rcv).Seconds() > 60 {
-				logger.Printf("closing connection after read timeout 60sec, %s", local.RemoteAddr().String())
-				break L
-			}
-		}
-	}
-	ticker.Stop()
-	atomic.AddInt64(&con_alive, -1)
-}
+	local.SetReadDeadline(time.Now().Add(60 * time.Second))
 
-func line_reader(r *bufio.Reader, lines chan string) {
-	for {
-		line, _, err := r.ReadLine()
-		if err != nil {
-			// my oh my, such an ugly way to stop accepting data via channels :(
-			lines <- "__end_of_data__"
-			break
-		}
-		lines <- string(line)
+	scanner := bufio.NewScanner(local)
+	for scanner.Scan() {
+		atomic.AddInt32(&mon.Rcv, 1)
+		parse(scanner.Text(), boss)
+
+		local.SetReadDeadline(time.Now().Add(60 * time.Second))
 	}
+	if err := scanner.Err(); err != nil {
+		logger.Printf("socket error: %v", err)
+	}
+
+	atomic.AddInt64(&con_alive, -1)
 }
 
 func parse(input string, boss mylib.Boss) {
