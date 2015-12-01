@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.29.3) unstable; urgency=low
+
+  * fix reader 
+
+ -- Kirill Zhalnin <kiwi@yandex-team.ru>  Mon, 30 Nov 2015 18:52:23 +0300
+
 graphite-ch-cacher (0.1.29.2) unstable; urgency=low
 
   * fixed resend  

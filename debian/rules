@@ -21,6 +21,7 @@ clean:
 binary-arch: clean
 	dh_prep
 	dh_installdirs
+	/usr/bin/go get stablelib.com/v1/crypto/siphash
 	cd $(GOPATH)/src && find * -name '*.go' -exec dirname {} \; | xargs -n1 go install
 	mkdir -p $(PKGDIR)/usr/bin
 	cp $(GOPATH)/bin/* $(PKGDIR)/usr/bin/

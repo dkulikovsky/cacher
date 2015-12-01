@@ -2,7 +2,7 @@ Source: graphite-ch-cacher
 Section: devel
 Priority: extra
 Maintainer: Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>
-Build-Depends: debhelper (>= 7.0.50~), golang-stable
+Build-Depends: debhelper (>= 7.0.50~), golang-go
 Standards-Version: 3.9.1
 Homepage: http://bsgitlab.yandex-team.ru/dkulikovsky/cacher
 
