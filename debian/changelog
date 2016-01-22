@@ -1,8 +1,14 @@
-graphite-ch-cacher (0.1.29.3) unstable; urgency=low
+graphite-ch-cacher (0.1.31) unstable; urgency=low
 
-  * fix reader 
+  * read loop refactoring
 
- -- Kirill Zhalnin <kiwi@yandex-team.ru>  Mon, 30 Nov 2015 18:52:23 +0300
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 02 Dec 2015 17:58:45 +0300
+
+graphite-ch-cacher (0.1.30) unstable; urgency=low
+
+  * fixed connection leak on http requests to metricsearch and clickhouse
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Tue, 24 Nov 2015 19:30:56 +0300
 
 graphite-ch-cacher (0.1.29.2) unstable; urgency=low
 
