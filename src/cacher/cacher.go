@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/stathat/consistent"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"net"
@@ -55,6 +56,14 @@ func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
 	atomic.AddInt64(&con_alive, -1)
 }
 
+func metricTest(r rune) bool {
+	return (r != '_' && r != '-' &&
+		r != '.' && r != ':' &&
+		(r < '0' || r > '9') &&
+		(r < 'A' || r > 'Z') &&
+		(r < 'a' || r > 'z'));
+}
+
 func parse(input string, boss mylib.Boss) {
 	if len(input) < 15 {
 		// input str must be at least 15 chars
@@ -67,6 +76,10 @@ func parse(input string, boss mylib.Boss) {
 	arr := strings.Fields(input)
 	if len(arr) == 3 {
 		metric, data, ts = arr[0], arr[1], arr[2]
+		// validate metric name
+		if strings.IndexFunc(metric, metricTest) != -1 {
+			logger.Printf("Failed to parse metric %s", metric)
+		}
 		// convert timestamp to int64
 		ts_int, err := strconv.ParseInt(ts, 0, 64)
 		if err != nil {
@@ -86,7 +99,7 @@ func parse(input string, boss mylib.Boss) {
 
 		if boss.Single == 1 {
 			w := singleSender(boss.Senders)
-			w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s', %d)", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())
+			w.Pipe <- fmt.Sprintf("%s\t%s\t%d\t%s\t%d\n", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())
 		} else {
 			r, err := boss.Ring.GetN(metric, boss.Rf)
 			if err != nil {
@@ -96,7 +109,7 @@ func parse(input string, boss mylib.Boss) {
 
 			for _, item := range r {
 				w := getSender(item, boss.Senders)
-				w.Pipe <- fmt.Sprintf("('%s', %s, %d, '%s', %d)", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())
+				w.Pipe <- fmt.Sprintf("%s\t%s\t%d\t%s\t%d\n", metric, data, t.Unix(), t.Format("2006-01-02"), curr_time.Unix())
 			}
 		}
 		// send metric to deltaManager
@@ -118,7 +131,7 @@ func sender(sender mylib.Sender, send_mon *int32) {
 		case <-ticker:
 			if len(data_buf) > 0 {
 				//	log("debug", fmt.Sprintf("sending (t) %d bytes to %s..", data_buf.Len(), sender.host))
-				send_data(strings.Join(data_buf, ", "), sender)
+				send_data(strings.Join(data_buf, ""), sender)
 				atomic.AddInt32(send_mon, send)
 				send = 0
 				// reset buffer
@@ -144,14 +157,20 @@ func send_data(data string, c mylib.Sender) {
 	url := fmt.Sprintf("http://%s:%d", c.Host, c.Port)
 
 	for retry := 0; retry < 3; retry++ {
-		req := strings.NewReader(fmt.Sprintf("INSERT INTO default.graphite VALUES %s", data))
+		req := strings.NewReader(fmt.Sprintf("INSERT INTO default.graphite FORMAT TabSeparated\n%s", data))
 		resp, err := client.Post(url, "text/xml", req)
 		if err != nil {
 			logger.Printf("Failed to send data to %s:%d, retries left %d, going to sleep for 1s, error: %v", c.Host, c.Port, retry, err)
 			time.Sleep(1000*time.Millisecond)
 			continue
 		}
+		_, err = ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
+		if err != nil {
+			logger.Printf("Failed to read response body, retries left %d, going to sleep for 1s, error: %v", retry, err)
+			time.Sleep(1000*time.Millisecond)
+			continue
+		}
 		if resp.StatusCode != 200 {
 			logger.Printf("Got not 200 response status for %s:%d, retries left %d, going to sleep for 1s, status: %s", c.Host, c.Port, retry, resp.Status)
 			time.Sleep(1000*time.Millisecond)
@@ -220,7 +239,7 @@ func send_mon_data(m int32, r int32, c int32, boss mylib.Boss, ts time.Time, sen
 	tsF := ts.Format("2006-01-02")
 	for key, val := range data {
 		metric_name := fmt.Sprintf("one_sec.int_%s.%s", boss.Port, key)
-		out += fmt.Sprintf("('%s', %d, %d, '%s', %d),", metric_name, val, ts.Unix(), tsF, ts.Unix())
+		out += fmt.Sprintf("%s\t%d\t%d\t%s\t%d\n", metric_name, val, ts.Unix(), tsF, ts.Unix())
 		// all monitor metrics must exist in metricsearch index
 		boss.DeltaChan <- metric_name
 	}
