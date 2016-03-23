@@ -56,12 +56,15 @@ func process_connection(local net.Conn, boss mylib.Boss, mon *mylib.Mmon) {
 	atomic.AddInt64(&con_alive, -1)
 }
 
-func metricTest(r rune) bool {
-	return (r != '_' && r != '-' &&
-		r != '.' && r != ':' &&
-		(r < '0' || r > '9') &&
-		(r < 'A' || r > 'Z') &&
-		(r < 'a' || r > 'z'));
+func metricTest(s string) func(rune) bool {
+	return func(r rune) bool {
+		return (!strings.ContainsRune(s, r) &&
+			r != '.' &&
+			r != '_' && r != '-' &&
+			(r < '0' || r > '9') &&
+			(r < 'A' || r > 'Z') &&
+			(r < 'a' || r > 'z'));
+	}
 }
 
 func parse(input string, boss mylib.Boss) {
@@ -77,7 +80,7 @@ func parse(input string, boss mylib.Boss) {
 	if len(arr) == 3 {
 		metric, data, ts = arr[0], arr[1], arr[2]
 		// validate metric name
-		if strings.IndexFunc(metric, metricTest) != -1 {
+		if strings.IndexFunc(metric, boss.MetricFunc) != -1 {
 			logger.Printf("Failed to parse metric %s", metric)
 		}
 		// convert timestamp to int64
@@ -334,6 +337,13 @@ func main() {
 	boss.Single = 0
 	boss.Port = *listenPort
 	boss.DeltaChan = deltaChan
+	if (config.MetricCheck) {
+		boss.MetricFunc = metricTest(config.MetricChars) 
+	} else {
+		boss.MetricFunc = func(rune) bool {
+			return false
+		}
+	}
 	// if we have a single host, than we can ignore hash ring mess
 	// and do simple rr rotation of senders
 	if len(boss.Ring.Members()) == 1 {

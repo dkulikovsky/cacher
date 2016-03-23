@@ -18,6 +18,7 @@ type Boss struct {
 	Single    int
 	Port      string
 	DeltaChan chan string
+	MetricFunc func(rune) bool
 }
 
 type Mmon struct {
