@@ -23,6 +23,8 @@ type Config struct {
 	ChanLimit   int
 	Rf          int
 	EnableDelta int
+	MetricCheck bool
+	MetricChars string
 }
 
 type configFile struct {
@@ -34,6 +36,8 @@ const defaultConfig = `
     logLevel = 10
     storage = 127.0.0.1:8123:1
     Rf = 1
+    metricCheck = 0
+    metricChars =
 `
 
 func parseStorages(storage string) []*Storage {
