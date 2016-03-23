@@ -1,3 +1,10 @@
+graphite-ch-cacher (0.1.32) unstable; urgency=medium
+
+  * merged metric names checker from pull request
+  * https://bsgitlab.yandex-team.ru/dkulikovsky/cacher/compare/8de006145c45ed29c7c9f98ae0d6fcd497936c52...80b7b257b955f807fdb481f79d761550c53859ff 
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 23 Mar 2016 18:05:47 +0300
+
 graphite-ch-cacher (0.1.31) unstable; urgency=low
 
   * read loop refactoring
