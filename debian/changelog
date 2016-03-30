@@ -1,3 +1,9 @@
+graphite-ch-cacher (0.1.32.1) unstable; urgency=medium
+
+  * added return in metric name checker
+
+ -- Kulikovsky Dmitry <dkulikovsky@yandex-team.ru>  Wed, 30 Mar 2016 19:56:48 +0300
+
 graphite-ch-cacher (0.1.32) unstable; urgency=medium
 
   * merged metric names checker from pull request
