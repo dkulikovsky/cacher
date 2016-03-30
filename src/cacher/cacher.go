@@ -82,6 +82,7 @@ func parse(input string, boss mylib.Boss) {
 		// validate metric name
 		if strings.IndexFunc(metric, boss.MetricFunc) != -1 {
 			logger.Printf("Failed to parse metric %s", metric)
+			return
 		}
 		// convert timestamp to int64
 		ts_int, err := strconv.ParseInt(ts, 0, 64)
